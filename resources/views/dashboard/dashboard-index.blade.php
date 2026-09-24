@@ -37,29 +37,29 @@
                     POS
                 </a>
 
-                <a href="#" class="nav-link">
+                <a href="{{ url('/transaction-history') }}" class="nav-link">
                     <i class="fa-regular fa-clipboard"></i>
                     Transaction History
                 </a>
 
-                <a href="#" class="nav-link">
+                <a href="{{ url('/inventory') }}" class="nav-link">
                     <i class="fa-solid fa-box"></i>
                     Inventory
                 </a>
 
-                <a href="#" class="nav-link">
+                <a href="{{ url('/reports') }}" class="nav-link">
                     <i class="fa-solid fa-chart-column"></i>
                     Reports
                 </a>
 
-                <a href="#" class="nav-link">
+                <a href="{{ url('/user-management') }}" class="nav-link">
                     <i class="fa-solid fa-users"></i>
                     User Management
                 </a>
             </nav>
 
             <div class="sidebar-footer">
-                <a href="#" class="nav-link logout">
+                <a href="{{ url('/logout') }}" class="nav-link logout">
                     <i class="fa-solid fa-right-from-bracket"></i>
                     Log Out
                 </a>
