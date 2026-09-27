@@ -102,13 +102,11 @@
                         <div class="inv-icon-box blue">
                             <i class="fa-solid fa-cubes"></i>
                         </div>
-                        <span class="inv-pill positive"></span>
                     </div>
                     <div class="inv-stat-body">
                         <h5>TOTAL PRODUCTS</h5>
                         <div class="inv-stat-value-group">
-                            <span class="inv-stat-number"></span>
-                            <span class="inv-stat-sub"></span>
+                            <span class="inv-stat-number">{{ $products->count() }}</span>
                         </div>
                     </div>
                 </div>
@@ -119,13 +117,11 @@
                         <div class="inv-icon-box warning">
                             <i class="fa-solid fa-triangle-exclamation"></i>
                         </div>
-                        <span class="inv-pill warning"></span>
                     </div>
                     <div class="inv-stat-body">
                         <h5>LOW STOCK ITEMS</h5>
                         <div class="inv-stat-value-group">
-                            <span class="inv-stat-number"></span>
-                            <span class="inv-stat-sub danger-text"></span>
+                            <span class="inv-stat-number">{{ $products->where('stock_quantity', '>', 0)->where('stock_quantity', '<=', 5)->count() }}</span>
                         </div>
                     </div>
                 </div>
@@ -136,13 +132,11 @@
                         <div class="inv-icon-box danger">
                             <i class="fa-solid fa-basket-shopping"></i>
                         </div>
-                        <span class="inv-pill danger"></span>
                     </div>
                     <div class="inv-stat-body">
                         <h5>OUT OF STOCK</h5>
                         <div class="inv-stat-value-group">
-                            <span class="inv-stat-number"></span>
-                            <span class="inv-stat-sub"></span>
+                            <span class="inv-stat-number">{{ $products->where('stock_quantity', '<=', 0)->count() }}</span>
                         </div>
                     </div>
                 </div>
@@ -151,33 +145,41 @@
             <!-- Table Container Card -->
             <section class="inventory-card">
                 <!-- Search, Filter & Action Bar -->
-                <div class="inventory-actions-bar">
+                <form action="{{ route('products.index') }}" method="GET" id="filter-form" class="inventory-actions-bar">
                     <div class="search-box">
                         <i class="fa-solid fa-magnifying-glass"></i>
-                        <input type="text" placeholder="Search by SKU, product name, category, supplier...">
+                        <input type="text" name="search" value="{{ request('search') }}" placeholder="Search by SKU, product name, category, supplier...">
                     </div>
 
                     <div class="filter-dropdown">
-                        <select>
-                            <option>All Categories (All)</option>
+                        <select name="category_id" onchange="document.getElementById('filter-form').submit();">
+                            <option value="">All Categories</option>
+                            @foreach($categories as $category)
+                            <option value="{{ $category->id }}" {{ request('category_id') == $category->id ? 'selected' : '' }}>
+                                {{ $category->category_name }}
+                            </option>
+                            @endforeach
                         </select>
                     </div>
 
                     <div class="filter-dropdown small-select">
-                        <select>
-                            <option>Status</option>
+                        <select name="status" onchange="document.getElementById('filter-form').submit();">
+                            <option value="">All Status</option>
+                            <option value="in_stock" {{ request('status') == 'in_stock' ? 'selected' : '' }}>In Stock</option>
+                            <option value="low_stock" {{ request('status') == 'low_stock' ? 'selected' : '' }}>Low Stock</option>
+                            <option value="out_of_stock" {{ request('status') == 'out_of_stock' ? 'selected' : '' }}>Out of Stock</option>
                         </select>
                     </div>
 
-                    <button class="btn-filter-icon" type="button">
-                        <i class="fa-solid fa-sliders"></i>
-                    </button>
+                    <a href="{{ url('/inventory') }}" class="btn-filter-icon" title="Clear filters">
+                        <i class="fa-solid fa-filter-circle-xmark"></i>
+                    </a>
 
-                    <button class="btn-add-product" type="button">
+                    <a href="{{ route('products.create') }}" class="btn-add-product" style="text-decoration: none;">
                         <i class="fa-solid fa-plus"></i>
                         Add Product
-                    </button>
-                </div>
+                    </a>
+                </form>
 
                 <!-- Inventory Table -->
                 <div class="table-wrapper">
@@ -185,7 +187,7 @@
                         <thead>
                             <tr>
                                 <th>SKU</th>
-                                <th>PRODUCT NAME & COMPATIBILITY</th>
+                                <th>PRODUCT NAME & SUPPLIER</th>
                                 <th>CATEGORY</th>
                                 <th>IN STOCK</th>
                                 <th>SELLING PRICE</th>
@@ -194,32 +196,46 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <!-- Item Row Structure -->
+                            @forelse($products as $product)
                             <tr>
-                                <td class="sku-cell"></td>
+                                <td class="sku-cell">{{ $product->sku }}</td>
                                 <td class="product-info-cell">
-                                    <div class="product-thumb"></div>
                                     <div class="product-details">
-                                        <div class="product-name"></div>
-                                        <div class="product-spec"></div>
+                                        <div class="product-name">{{ $product->product_name }}</div>
+                                        <div class="product-spec">Supplier: {{ $product->supplier->supplier_name ?? 'N/A' }}</div>
                                     </div>
                                 </td>
                                 <td>
-                                    <span class="category-badge"></span>
+                                    <span class="category-badge">{{ $product->category->category_name ?? 'N/A' }}</span>
                                 </td>
-                                <td class="stock-cell"></td>
-                                <td class="price-cell"></td>
+                                <td class="stock-cell">{{ $product->stock_quantity }}</td>
+                                <td class="price-cell">₱{{ number_format($product->sell_price, 2) }}</td>
                                 <td>
-                                    <span class="status-badge"></span>
+                                    @if($product->stock_quantity <= 0)
+                                        <span class="status-badge out-of-stock">Out of Stock</span>
+                                        @elseif($product->stock_quantity <= 5)
+                                            <span class="status-badge low-stock">Low Stock</span>
+                                            @else
+                                            <span class="status-badge in-stock">In Stock</span>
+                                            @endif
                                 </td>
                                 <td>
                                     <div class="action-buttons">
-                                        <button class="btn-icon" type="button" title="View"><i class="fa-regular fa-eye"></i></button>
-                                        <button class="btn-icon" type="button" title="Edit"><i class="fa-solid fa-pen"></i></button>
-                                        <button class="btn-icon danger" type="button" title="Delete"><i class="fa-regular fa-trash-can"></i></button>
+                                        <a href="{{ route('products.show', $product->id) }}" class="btn-icon" title="View"><i class="fa-regular fa-eye"></i></a>
+                                        <a href="{{ route('products.edit', $product->id) }}" class="btn-icon" title="Edit"><i class="fa-solid fa-pen"></i></a>
+                                        <form action="{{ route('products.destroy', $product->id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this product?');">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button class="btn-icon danger" type="submit" title="Delete"><i class="fa-regular fa-trash-can"></i></button>
+                                        </form>
                                     </div>
                                 </td>
                             </tr>
+                            @empty
+                            <tr>
+                                <td colspan="7" style="text-align: center; padding: 20px;">No products found in the inventory.</td>
+                            </tr>
+                            @endforelse
                         </tbody>
                     </table>
                 </div>
@@ -227,13 +243,13 @@
                 <!-- Table Footer / Pagination -->
                 <div class="table-footer">
                     <div class="pagination-info">
-                        Showing <span></span>-<span></span> of <span></span> items
+                        Showing <span>{{ $products->count() > 0 ? 1 : 0 }}</span>-<span>{{ $products->count() }}</span> of <span>{{ $products->count() }}</span> items
                     </div>
 
                     <div class="pagination">
                         <button class="page-btn prev" type="button"><i class="fa-solid fa-chevron-left"></i></button>
                         <div class="page-numbers">
-                            <!-- Page number buttons will be populated here -->
+                            <!-- Page number buttons -->
                         </div>
                         <button class="page-btn next" type="button"><i class="fa-solid fa-chevron-right"></i></button>
                     </div>

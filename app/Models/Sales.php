@@ -4,8 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Sales extends Model
+class Sale extends Model
 {
+    // Specify table name explicitly if your database table is named 'sales'
+    protected $table = 'sales';
+
     protected $fillable = [
         'customer_id',
         'user_id',

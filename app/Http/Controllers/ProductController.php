@@ -1,5 +1,7 @@
 <?php
+
 namespace App\Http\Controllers;
+
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\Supplier;
@@ -12,33 +14,53 @@ class ProductController extends Controller
     // =========================================================
     // 1. DISPLAY ALL PRODUCTS
     // =========================================================
-    public function index()
+    public function index(Request $request)
     {
-        // Get all products from the products table.
-        //
-        // with() also gets the related category and supplier.
-        // This is useful because each product belongs to a category
-        // and a supplier.
-        $products = Product::with([
-            'category',
-            'supplier',
-        ])
+        // Fetch all categories for the filter dropdown
+        $categories = Category::orderBy('category_name')->get();
 
-        // Display the newest products first.
-        // latest() normally uses the created_at column.
-        ->latest()
+        // Build query with relationships
+        $query = Product::with(['category', 'supplier']);
 
-        // Execute the database query and get the products.
-        ->get();
+        // 1. Filter by Search Query
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('sku', 'like', "%{$search}%")
+                    ->orWhere('product_name', 'like', "%{$search}%")
+                    ->orWhereHas('category', function ($catQuery) use ($search) {
+                        $catQuery->where('category_name', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('supplier', function ($supQuery) use ($search) {
+                        $supQuery->where('supplier_name', 'like', "%{$search}%");
+                    });
+            });
+        }
 
+        // 2. Filter by Category
+        if ($request->filled('category_id')) {
+            $query->where('category_id', $request->input('category_id'));
+        }
 
-        // Send the products to the Blade view:
-        // resources/views/products/index.blade.php
-        //
-        // 'products' is the name that the Blade file
-        // will use to access the product data.
-        return view('products.index', [
-            'products' => $products
+        // 3. Filter by Status
+        if ($request->filled('status')) {
+            $status = $request->input('status');
+            if ($status === 'in_stock') {
+                $query->where('stock_quantity', '>', 5);
+            } elseif ($status === 'low_stock') {
+                $query->where('stock_quantity', '>', 0)
+                    ->where('stock_quantity', '<=', 5);
+            } elseif ($status === 'out_of_stock') {
+                $query->where('stock_quantity', '<=', 0);
+            }
+        }
+
+        // Get filtered products sorted by latest
+        $products = $query->latest()->get();
+
+        return view('inventory.inventory-index', [
+            'products'   => $products,
+            'categories' => $categories,
         ]);
     }
 
@@ -48,27 +70,13 @@ class ProductController extends Controller
     // =========================================================
     public function create()
     {
-        // Get all categories from the categories table.
-        //
-        // orderBy() sorts the categories alphabetically
-        // using category_name.
         $categories = Category::orderBy('category_name')->get();
-
-
-        // Get all suppliers from the suppliers table.
-        //
-        // The suppliers are also sorted alphabetically
-        // using supplier_name.
         $suppliers = Supplier::orderBy('supplier_name')->get();
 
-
-        // Open the create product form.
-        //
-        // Send the categories and suppliers to the Blade view.
-        // The form can use them for dropdown/select fields.
-        return view('products.create', [
+        // Point to the correct folder and file name: resources/views/inventory/add_product.blade.php
+        return view('inventory.add_product', [
             'categories' => $categories,
-            'suppliers' => $suppliers,
+            'suppliers'  => $suppliers,
         ]);
     }
 
@@ -162,7 +170,7 @@ class ProductController extends Controller
         // After successfully saving:
         // redirect the user to the product list page.
         return redirect()
-            ->route('products.index')
+            ->route('products.create')
 
             // Display a success message.
             ->with('success', 'Product added successfully.');

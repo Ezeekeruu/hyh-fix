@@ -26,18 +26,34 @@ class UserController extends Controller
     // Business purpose:
     // Show the administrator all users/staff accounts.
     //
-    public function index()
+    public function index(Request $request)
     {
-        // Get all users from the database.
-        //
-        // latest() shows the newest accounts first.
-        $users = User::latest()->get();
+        $query = User::latest();
 
-        // Send the users to:
-        // resources/views/users/index.blade.php
-        //
-        // Explicit array mapping instead of compact()
-        return view('users.index', [
+        // 1. Search by ID, Name, or Email
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+
+            $query->where(function ($q) use ($search) {
+                $q->where('id', 'like', "%{$search}%")
+                    ->orWhere('name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+
+        // 2. Filter by Role ('admin' or 'staff')
+        if ($request->filled('role') && $request->role !== 'all') {
+            $query->where('role', $request->role);
+        }
+
+        // 3. Filter by Account Status ('active' or 'disabled')
+        if ($request->filled('status') && $request->status !== 'all') {
+            $query->where('status', $request->status);
+        }
+
+        $users = $query->get();
+
+        return view('users.users-index', [
             'users' => $users
         ]);
     }
@@ -54,7 +70,7 @@ class UserController extends Controller
     public function create()
     {
         // Display the create user page.
-        return view('users.create');
+        return view('users.add_user');
     }
 
 
@@ -83,28 +99,24 @@ class UserController extends Controller
             'email' => 'required|email|max:255|unique:users,email',
 
             // Password is required when creating a new account.
-            'password' => 'required|string|min:8|confirmed',
+            'password'  => 'required|string|min:6',
 
-            'role' => 'required|in:admin,staff',
+            'role'      => 'required|in:manager,secretary,sales-clerk,technician,admin,staff',
 
-            'status' => 'required|in:active,inactive',
+            'status' => 'required|in:active,disabled',
         ]);
 
+        $dbRole = ($request->input('role') === 'manager') ? 'admin' : 'staff';
 
         $user = new User();
-
         $user->name = $request->input('name');
         $user->email = $request->input('email');
-
         $user->password = Hash::make($request->input('password'));
-
-        $user->role = $request->input('role');
+        $user->role = $dbRole;
         $user->status = $request->input('status');
-
         $user->save();
 
-        return redirect()
-            ->route('users.index')
+        return redirect('/user-management')
             ->with('success', 'User created successfully.');
     }
 
@@ -119,7 +131,7 @@ class UserController extends Controller
     }
 
 
-    
+
     public function edit($id)
     {
         $user = User::findOrFail($id);
@@ -130,7 +142,7 @@ class UserController extends Controller
     }
 
 
-    
+
     public function update(Request $request, $id)
     {
         $user = User::findOrFail($id);
@@ -164,19 +176,19 @@ class UserController extends Controller
         $user->save();
 
         return redirect()
-            ->route('users.index')
+            ->route('users-management')
             ->with('success', 'User updated successfully.');
     }
 
 
- 
+
     public function destroy($id)
     {
         $user = User::findOrFail($id);
 
         $user->delete();
 
-  
+
         return redirect()
             ->route('users.index')
             ->with('success', 'User deleted successfully.');

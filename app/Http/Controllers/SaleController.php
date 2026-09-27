@@ -1,11 +1,13 @@
 <?php
 
 namespace App\Http\Controllers;
+
 use App\Models\Customer;
 use App\Models\Product;
 use App\Models\Sale;
 use App\Models\SaleItem;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -26,11 +28,11 @@ class SaleController extends Controller
             'user'
         ])
 
-        // Display the newest sales first.
-        ->latest()
+            // Display the newest sales first.
+            ->latest()
 
-        // Execute the query and get the results.
-        ->get();
+            // Execute the query and get the results.
+            ->get();
 
 
         // Open the sales index page.
@@ -69,7 +71,7 @@ class SaleController extends Controller
         //
         // Send customers and available products
         // to the Blade view.
-        return view('sales.create', [
+        return view('pos.pos-index', [
             'customers' => $customers,
             'products' => $products
         ]);
@@ -89,33 +91,33 @@ class SaleController extends Controller
             // If a customer ID is provided,
             // that ID must exist in the customers table.
             'customer_id' =>
-                'nullable|exists:customers,id',
+            'nullable|exists:customers,id',
 
 
             // Payment method is required.
             // Example:
             // Cash, GCash, Card
             'payment_method' =>
-                'required|string|max:50',
+            'required|string|max:50',
 
 
             // Products must be provided.
             // It must be an array.
             // At least one product must be included.
             'products' =>
-                'required|array|min:1',
+            'required|array|min:1',
 
 
             // Every product in the array must have
             // a valid product ID.
             'products.*.id' =>
-                'required|exists:products,id',
+            'required|exists:products,id',
 
 
             // Every product must have a quantity.
             // Quantity must be at least 1.
             'products.*.quantity' =>
-                'required|integer|min:1',
+            'required|integer|min:1',
         ]);
 
 
@@ -147,8 +149,7 @@ class SaleController extends Controller
             // Get the ID of the currently logged-in user.
             //
             // This records which staff/user processed the sale.
-            $sale->user_id =
-                auth()->id();
+            $sale->user_id = Auth::id();
 
 
             // Store the current date and time.
@@ -390,7 +391,7 @@ class SaleController extends Controller
             'user',
             'saleItems.product'
         ])
-        ->findOrFail($id);
+            ->findOrFail($id);
 
 
         // Open the sale details page.
@@ -437,17 +438,17 @@ class SaleController extends Controller
 
             // Customer is optional.
             'customer_id' =>
-                'nullable|exists:customers,id',
+            'nullable|exists:customers,id',
 
 
             // Payment method is required.
             'payment_method' =>
-                'required|string|max:50',
+            'required|string|max:50',
 
 
             // Only these statuses are allowed.
             'status' =>
-                'required|string|in:completed,cancelled,refunded',
+            'required|string|in:completed,cancelled,refunded',
         ]);
 
 

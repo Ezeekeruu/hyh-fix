@@ -98,31 +98,51 @@
             <section class="inventory-card">
                 <!-- Search, Filter & Action Bar -->
                 <div class="inventory-actions-bar">
-                    <div class="search-box">
-                        <i class="fa-solid fa-magnifying-glass"></i>
-                        <input type="text" placeholder="Search by name, username, staff ID, or email...">
-                    </div>
 
-                    <div class="filter-dropdown">
-                        <select>
-                            <option>All Roles</option>
-                        </select>
-                    </div>
+                    <!-- Combined Filter Form -->
+                    <form action="{{ url('/user-management') }}" method="GET" style="display: flex; gap: 10px; align-items: center; width: 100%;">
 
-                    <div class="filter-dropdown small-select">
-                        <select>
-                            <option >Status</option>
-                        </select>
-                    </div>
+                        <!-- 1. Search Box -->
+                        <div class="search-box">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                            <input
+                                type="text"
+                                name="search"
+                                value="{{ request('search') }}"
+                                placeholder="Search by name, User ID, or email...">
+                        </div>
 
-                    <button class="btn-filter-icon" type="button" title="Clear filters">
-                        <i class="fa-solid fa-filter-circle-xmark"></i>
-                    </button>
+                        <!-- 2. Role Dropdown -->
+                        <div class="filter-dropdown">
+                            <select name="role" onchange="this.form.submit()">
+                                <option value="all" {{ request('role') == 'all' || !request('role') ? 'selected' : '' }}>All Roles</option>
+                                <option value="admin" {{ request('role') == 'admin' ? 'selected' : '' }}>Manager</option>
+                                <option value="staff" {{ request('role') == 'staff' ? 'selected' : '' }}>Staff</option>
+                            </select>
+                        </div>
 
-                    <button class="btn-add-product" type="button">
-                        <i class="fa-solid fa-user-plus"></i>
-                        Add New User
-                    </button>
+                        <!-- 3. Status Dropdown -->
+                        <div class="filter-dropdown small-select">
+                            <select name="status" onchange="this.form.submit()">
+                                <option value="all" {{ request('status') == 'all' || !request('status') ? 'selected' : '' }}>All Status</option>
+                                <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>Active</option>
+                                <option value="disabled" {{ request('status') == 'disabled' ? 'selected' : '' }}>Disabled</option>
+                            </select>
+                        </div>
+
+                        <!-- 4. Clear Filters Button -->
+                        <a href="{{ url('/user-management') }}" class="btn-filter-icon" title="Clear filters">
+                            <i class="fa-solid fa-filter-circle-xmark"></i>
+                        </a>
+
+                        <!-- 5. Add New User Button -->
+                        <a href="{{ url('/user-management/add') }}" class="btn-add-product" style="margin-left: auto;">
+                            <i class="fa-solid fa-user-plus"></i>
+                            Add New User
+                        </a>
+
+                    </form>
+
                 </div>
 
                 <!-- Users Table -->
@@ -139,46 +159,52 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <!-- User Row Structure (loop your users here) -->
+                            @forelse($users as $user)
                             <tr>
-                                <td class="user-id-cell"></td>
+                                <td class="user-id-cell">{{ $user->id }}</td>
                                 <td>
                                     <div class="user-info-cell">
                                         <div class="user-avatar">
-                                            <!-- <img src="" alt=""> or initials -->
-                                            <span class="presence-dot"></span>
+                                            {{ strtoupper(substr($user->name, 0, 2)) }}
+                                            <span class="presence-dot {{ $user->status == 'active' ? 'active' : '' }}"></span>
                                         </div>
                                         <div class="user-details">
-                                            <div class="user-name">dsad</div>
-                                            <div class="user-email">@</div>
+                                            <div class="user-name">{{ $user->name }}</div>
+                                            <div class="user-email">{{ $user->email }}</div>
                                         </div>
                                     </div>
                                 </td>
                                 <td>
-                                    <!-- Add class: manager | technician | sales-clerk | secretary -->
-                                    <span class="role-badge">
-                                        Manager
+                                    <span class="role-badge {{ $user->role }}">
+                                        {{ ucfirst($user->role) }}
                                     </span>
                                 </td>
                                 <td>
-                                    <!-- Add class: active | inactive -->
-                                    <span class="status-badge">
+                                    <span class="status-badge {{ $user->status }}">
                                         <span class="status-dot"></span>
+                                        {{ ucfirst($user->status) }}
                                     </span>
                                 </td>
-                                <td class="joined-cell"></td>
+                                <td class="joined-cell">{{ $user->created_at ? $user->created_at->format('M d, Y') : 'N/A' }}</td>
                                 <td>
-                                    <div class="action-buttons">
+                                    <div class="action-buttons" style="display: flex; justify-content: center; align-items: center;">
                                         <button class="btn-icon" type="button" title="View"><i class="fa-regular fa-eye"></i></button>
                                         <button class="btn-icon" type="button" title="Edit"><i class="fa-solid fa-pen"></i></button>
                                         <label class="toggle-switch" title="Activate / Deactivate">
-                                            <input type="checkbox">
+                                            <input type="checkbox" {{ $user->status == 'active' ? 'checked' : '' }}>
                                             <span class="toggle-slider"></span>
                                         </label>
                                         <button class="btn-icon danger" type="button" title="Delete"><i class="fa-regular fa-trash-can"></i></button>
                                     </div>
                                 </td>
                             </tr>
+                            @empty
+                            <tr>
+                                <td colspan="6" style="text-align: center; padding: 20px; color: #6b7280;">
+                                    No staff accounts found.
+                                </td>
+                            </tr>
+                            @endforelse
                         </tbody>
                     </table>
                 </div>
