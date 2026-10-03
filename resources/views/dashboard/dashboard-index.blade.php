@@ -37,6 +37,11 @@
                     POS
                 </a>
 
+                <a href="{{ url('/repair-management') }}" class="nav-link ">
+                    <i class="fa-solid fa-wrench"></i>
+                    Repair Management
+                </a>
+
                 <a href="{{ url('/transaction-history') }}" class="nav-link">
                     <i class="fa-regular fa-clipboard"></i>
                     Transaction History
@@ -86,7 +91,7 @@
                         <div class="avatar"></div>
                         <div class="profile-info">
                             <h4>Sonayah Faisal</h4>
-                            <span>Manager</span>
+                            <span> Manager</span>
                         </div>
                         <i class="fa-solid fa-chevron-down"></i>
                     </div>
@@ -95,7 +100,7 @@
 
             <section class="welcome-section">
                 <div>
-                    <h1>Welcome back, Sonayah!</h1>
+                    <h1>Welcome, Sonayah!</h1>
                     <p>Here is what's happening at HYH Fix today</p>
                 </div>
                 <div class="date-card">
@@ -117,7 +122,7 @@
                             <i class="fa-solid fa-money-bill"></i>
                         </div>
                     </div>
-                    <h2 class="stat-value"></h2>
+                    <h2 class="stat-value">₱{{ number_format($todaySales, 2) }}</h2>
                 </div>
 
                 <div class="stat-card">
@@ -127,7 +132,7 @@
                             <i class="fa-regular fa-file-lines"></i>
                         </div>
                     </div>
-                    <h2 class="stat-value"></h2>
+                    <h2 class="stat-value">{{ $totalTransactions }}</h2>
                 </div>
 
                 <div class="stat-card">
@@ -137,7 +142,7 @@
                             <i class="fa-solid fa-triangle-exclamation"></i>
                         </div>
                     </div>
-                    <h2 class="stat-value"></h2>
+                    <h2 class="stat-value">{{ $lowStockCount }}</h2>
                 </div>
 
                 <div class="stat-card">
@@ -147,7 +152,7 @@
                             <i class="fa-solid fa-toolbox"></i>
                         </div>
                     </div>
-                    <h2 class="stat-value"></h2>
+                    <h2 class="stat-value">{{ $pendingRepairs }}</h2>
                 </div>
             </section>
 
@@ -168,9 +173,9 @@
                         </div>
 
                         <div class="period-tabs">
-                            <button>Daily</button>
-                            <button class="active">Weekly</button>
-                            <button>Monthly</button>
+                            <button type="button" data-range="daily">Daily</button>
+                            <button type="button" data-range="weekly" class="active">Weekly</button>
+                            <button type="button" data-range="monthly">Monthly</button>
                         </div>
                     </div>
 
@@ -186,8 +191,8 @@
                         </div>
                     </div>
 
-                    <!-- CHART PLACEHOLDER -->
-                    <div class="chart-placeholder"></div>
+                    <!-- CHART: retail vs repair revenue (Chart.js) -->
+                    <div class="chart-placeholder" style="position:relative;"><canvas id="salesChart"></canvas></div>
 
                     <!-- BOTTOM METRICS -->
                     <div class="analytics-bottom">
@@ -198,7 +203,7 @@
 
                             <div>
                                 <span>Top Repair Service</span>
-                                <h4></h4>
+                                <h4>{{ $topRepairService ?? '—' }}</h4>
                             </div>
                         </div>
 
@@ -209,7 +214,7 @@
 
                             <div>
                                 <span>Top Retail Accessory</span>
-                                <h4></h4>
+                                <h4>{{ $topRetailProduct ?? '—' }}</h4>
                             </div>
                         </div>
                     </div>
@@ -219,58 +224,46 @@
                 <div class="low-stock-card">
                     <div class="low-stock-header">
                         <h2>Low Stock Products</h2>
-                        <button>Manage</button>
+                        <a href="{{ url('/inventory') }}" class="manage-btn">Manage</a>
                     </div>
 
                     <div class="stock-list">
-                        <div class="stock-item">
-                            <div class="stock-image"></div>
+                        @php
+                        $lowStockProducts = \App\Models\Product::where('stock_quantity', '<=', 10)
+                            ->orderBy('stock_quantity')
+                            ->get();
+                            @endphp
 
-                            <div class="stock-info">
-                                <h4></h4>
-                                <span></span>
+                            @forelse($lowStockProducts as $product)
+                            <div class="stock-item">
+                                <div class="stock-image">
+                                    @if(!empty($product->image_path))
+                                    <img src="{{ asset('storage/' . $product->image_path) }}" alt="{{ $product->product_name }}">
+                                    @else
+                                    <i class="fa-solid fa-box-open"></i>
+                                    @endif
+                                </div>
+
+                                <div class="stock-info">
+                                    <h4>{{ $product->product_name }}</h4>
+                                    <span class="{{ $product->stock_quantity == 0 ? 'text-danger' : '' }}">
+                                        {{ $product->stock_quantity }} left
+                                    </span>
+                                </div>
+
+                                <div class="stock-badge {{ $product->stock_quantity == 0 ? 'out-of-stock' : 'low-stock' }}">
+                                    {{ $product->stock_quantity == 0 ? 'Out of Stock' : 'Low Stock' }}
+                                </div>
                             </div>
-
-                            <div class="stock-badge low"></div>
-                        </div>
-
-                        <div class="stock-item">
-                            <div class="stock-image"></div>
-
-                            <div class="stock-info">
-                                <h4></h4>
-                                <span></span>
-                            </div>
-
-                            <div class="stock-badge critical"></div>
-                        </div>
-
-                        <div class="stock-item">
-                            <div class="stock-image"></div>
-
-                            <div class="stock-info">
-                                <h4></h4>
-                                <span></span>
-                            </div>
-                            <div class="stock-badge critical"></div>
-                        </div>
-
-                        <div class="stock-item">
-                            <div class="stock-image"></div>
-
-                            <div class="stock-info">
-                                <h4></h4>
-                                <span></span>
-                            </div>
-
-                            <div class="stock-badge low"></div>
-                        </div>
+                            @empty
+                            <p class="no-stock-text">All products are adequately stocked.</p>
+                            @endforelse
                     </div>
                 </div>
             </section>
 
             <!-- Recent Transactions -->
-            <section class="transactions-card">
+            <section class="transactions-card" id="transactions">
                 <div class="transactions-header">
                     <div>
                         <h2>Recent Transactions</h2>
@@ -281,25 +274,34 @@
                     </div>
 
                     <!-- Filters -->
-                    <div class="filters">
+                    <form action="{{ url('/dashboard') }}#transactions" method="GET" class="filters">
                         <div class="search-box">
                             <i class="fa-solid fa-magnifying-glass"></i>
-                            <input type="text" placeholder="Filter customer, ticket...">
+                            <input type="text" name="search" value="{{ request('search') }}"
+                                placeholder="Search #ID, customer, or repair service...">
+                            <button type="submit" class="search-btn">Search</button>
                         </div>
 
-                        <select>
-                            <option>Status: All</option>
-                        </select>
+                        <div class="filter-dropdown">
+                            <select name="status" onchange="this.form.submit()">
+                                <option value="all" {{ !in_array(request('status'), ['complete','in_progress']) ? 'selected' : '' }}>Status: All</option>
+                                <option value="complete" {{ request('status') === 'complete' ? 'selected' : '' }}>Complete</option>
+                                <option value="in_progress" {{ request('status') === 'in_progress' ? 'selected' : '' }}>In Progress</option>
+                            </select>
+                        </div>
 
-                        <select>
-                            <option>Payment: All</option>
-                        </select>
+                        <div class="filter-dropdown small-select">
+                            <select name="payment" onchange="this.form.submit()">
+                                <option value="all" {{ !in_array(request('payment'), ['cash','gcash']) ? 'selected' : '' }}>Payment: All</option>
+                                <option value="cash" {{ request('payment') === 'cash' ? 'selected' : '' }}>Cash</option>
+                                <option value="gcash" {{ request('payment') === 'gcash' ? 'selected' : '' }}>GCash</option>
+                            </select>
+                        </div>
 
-                        <button class="filter-btn">
-                            <i class="fa-solid fa-filter"></i>
-                            Filter
-                        </button>
-                    </div>
+                        <a href="{{ url('/dashboard') }}#transactions" class="btn-filter-icon" title="Clear filters">
+                            <i class="fa-solid fa-filter-circle-xmark"></i>
+                        </a>
+                    </form>
 
                 </div>
 
@@ -309,7 +311,7 @@
                         <thead>
                             <tr>
                                 <th>Transaction ID</th>
-                                <th>Customer & Device</th>
+                                <th>Customer & Product/Service</th>
                                 <th>Type</th>
                                 <th>Amount</th>
                                 <th>Timestamp</th>
@@ -320,71 +322,73 @@
                         </thead>
 
                         <tbody>
+                            @forelse($transactions as $t)
                             <tr>
-                                <td></td>
-                                <td></td>
-                                <td><span class="tag"></span></td>
-                                <td></td>
-                                <td></td>
-                                <td></td>
-                                <td><span class="status"></span></td>
+                                <td>#{{ $t->record_id }}</td>
                                 <td>
-                                    <div class="actions">
-                                        <i class="fa-regular fa-file-lines"></i>
-                                        <i class="fa-solid fa-print"></i>
+                                    <div style="display:block;font-weight:600;">
+                                        {{ $t->customer_name }}
                                     </div>
-                                </td>
-                            </tr>
 
-                            <tr>
-                                <td></td>
-                                <td></td>
-                                <td><span class="tag"></span></td>
-                                <td></td>
-                                <td></td>
-                                <td></td>
-                                <td><span class="status"></span></td>
-                                <td>
-                                    <div class="actions">
-                                        <i class="fa-regular fa-file-lines"></i>
-                                        <i class="fa-solid fa-print"></i>
+                                    <div style="display:block;color:#6b7280; font-size:16px;">
+                                        {{ $t->item_name ?? '—' }}
                                     </div>
-                                </td>
-                            </tr>
 
-                            <tr>
-                                <td></td>
-                                <td></td>
-                                <td><span class="tag"></span></td>
-                                <td></td>
-                                <td></td>
-                                <td></td>
-                                <td><span class="status"></span></td>
+                                    @if($t->type === 'Retail' && $t->item_count > 1)
+                                    <div style="display:block;color:#9ca3af;font-size:14px;">
+                                        + {{ $t->item_count - 1 }} item{{ ($t->item_count - 1) > 1 ? 's' : '' }}
+                                    </div>
+                                    @endif
+                                </td>
+
+                                <td>{{ $t->type }}</td>
+                                <td>₱{{ number_format($t->amount, 2) }}</td>
+                                <td>{{ \Carbon\Carbon::parse($t->transaction_date)->format('M d, Y h:i A') }}</td>
+                                <td>{{ ['cash' => 'Cash', 'gcash' => 'GCash'][strtolower($t->method ?? '')] ?? ($t->method ?? '—') }}</td>
+                                <td>{{ ucfirst($t->status) }}</td>
+
                                 <td>
                                     <div class="actions">
-                                        <i class="fa-regular fa-file-lines"></i>
+                                        @if($t->type === 'Retail')
+                                        <a href="{{ url('/sales/' . $t->record_id) }}" title="View receipt"><i class="fa-regular fa-file-lines"></i></a>
+                                        @else
+                                        <i class="fa-regular fa-file-lines" style="opacity:.4" title="No receipt view for repairs"></i>
+                                        @endif
                                         <i class="fa-solid fa-print"></i>
                                     </div>
                                 </td>
                             </tr>
+                            @empty
+                            <tr>
+                                <td colspan="8">No transactions found.</td>
+                            </tr>
+                            @endforelse
                         </tbody>
                     </table>
                 </div>
 
                 <!-- Pagination -->
                 <div class="pagination">
-                    <button>Prev</button>
+                    <button type="button"
+                        {{ $transactions->onFirstPage() ? 'disabled' : '' }}
+                        onclick="window.location='{{ $transactions->previousPageUrl() }}'">Prev</button>
 
                     <div class="pages">
-                        <button class="active">1</button>
-                        <button>2</button>
-                        <button>3</button>
+                        @for($p = max(1, $transactions->currentPage() - 1); $p <= min($transactions->lastPage(), $transactions->currentPage() + 1); $p++)
+                            <button type="button"
+                                class="{{ $p === $transactions->currentPage() ? 'active' : '' }}"
+                                onclick="window.location='{{ $transactions->url($p) }}'">{{ $p }}</button>
+                            @endfor
                     </div>
-                    <button>Next</button>
+
+                    <button type="button"
+                        {{ $transactions->hasMorePages() ? '' : 'disabled' }}
+                        onclick="window.location='{{ $transactions->nextPageUrl() }}'">Next</button>
                 </div>
 
                 <div class="pagination-info">
-                    Showing <strong>1–3</strong> out of <strong>9</strong> transactions
+                    Showing <strong>{{ $transactions->firstItem() ?? 0 }}–{{ $transactions->lastItem() ?? 0 }}</strong>
+                    out of <strong>{{ $transactions->total() }}</strong> transactions
                 </div>
             </section>
         </main>
@@ -411,8 +415,45 @@
         }
 
         updateDateTime();
-        setInterval(updateDateTime, 1000); 
+        setInterval(updateDateTime, 1000);
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script>
+        (function () {
+            var el = document.getElementById('salesChart');
+            if (!el || typeof Chart === 'undefined') return;
+            var series = @json($chart);
+            var chart = new Chart(el, {
+                type: 'bar',
+                data: {
+                    labels: series.weekly.labels,
+                    datasets: [
+                        { label: 'Repair Services', data: series.weekly.repair, backgroundColor: '#1e293b', borderRadius: 6 },
+                        { label: 'Device Accessories', data: series.weekly.retail, backgroundColor: '#60a5fa', borderRadius: 6 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true, ticks: { callback: function (v) { return '₱' + v; } } } }
+                }
+            });
+            document.querySelectorAll('.period-tabs button').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    document.querySelectorAll('.period-tabs button').forEach(function (b) { b.classList.remove('active'); });
+                    btn.classList.add('active');
+                    var r = series[btn.getAttribute('data-range')] || series.weekly;
+                    chart.data.labels = r.labels;
+                    chart.data.datasets[0].data = r.repair;
+                    chart.data.datasets[1].data = r.retail;
+                    chart.update();
+                });
+            });
+        })();
     </script>
 
 </body>
+
 </html>

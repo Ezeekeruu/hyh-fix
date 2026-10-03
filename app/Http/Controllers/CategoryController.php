@@ -43,7 +43,7 @@ class CategoryController extends Controller
         $category->save();
 
         return redirect()
-            ->route('categories.index')
+            ->back()
             ->with('success', 'Category added successfully.');
     }
 

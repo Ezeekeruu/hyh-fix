@@ -40,7 +40,7 @@ class SupplierController extends Controller
         $supplier->save();
 
         return redirect()
-            ->route('suppliers.index')
+            ->back()
             ->with('success', 'Supplier added successfully.');
     }
 

@@ -14,12 +14,19 @@ class Product extends Model
         'cost_price',
         'sell_price',
         'stock_quantity',
+        'image_path',
     ];
 
     protected $casts = [
         'cost_price' => 'decimal:2',
         'sell_price' => 'decimal:2',
     ];
+
+    // Returns a ready-to-use image URL, or null if no image was uploaded.
+    public function getImageUrlAttribute()
+    {
+        return $this->image_path ? asset('storage/' . $this->image_path) : null;
+    }
 
     public function category()
     {

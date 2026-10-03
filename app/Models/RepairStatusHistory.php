@@ -6,6 +6,9 @@ use Illuminate\Database\Eloquent\Model;
 
 class RepairStatusHistory extends Model
 {
+
+    protected $table = 'repair_status_history';
+
     protected $fillable = [
         'repair_ticket_id',
         'status',
@@ -26,5 +29,4 @@ class RepairStatusHistory extends Model
     {
         return $this->belongsTo(User::class, 'changed_by');
     }
-
 }

@@ -1,8 +1,12 @@
 <?php
 
 namespace App\Http\Controllers;
+
+use App\Models\Customer;
 use App\Models\Device;
+use App\Models\DevicePhoto;
 use App\Models\RepairStatusHistory;
+use App\Models\ServiceType;
 use App\Models\RepairTicket;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -14,71 +18,83 @@ class RepairTicketController extends Controller
     // =========================================================
     // 1. DISPLAY ALL REPAIR TICKETS
     // =========================================================
-    public function index()
+    public function index(Request $request)
     {
-        // Get all repair tickets from the database.
-        //
-        // with() loads related information at the same time.
-        //
-        // device.customer
-        // = Get the device of the repair ticket
-        //   and the customer who owns that device.
-        //
-        // assignedUser
-        // = Get the staff/user assigned to the repair ticket.
-        $repairTickets = RepairTicket::with([
+
+        $query = RepairTicket::with([
             'device.customer',
-            'assignedUser',
-        ])
+            'assignedUser'
+        ]);
 
-        // Display the newest repair tickets first.
-        ->latest()
+        // Search
+        if ($request->filled('search')) {
 
-        // Execute the query and get all results.
-        ->get();
+            $search = $request->search;
 
+            $query->where(function ($q) use ($search) {
 
-        // Open the repair ticket list page.
-        //
-        // Send the repair tickets to the Blade view.
-        return view('repair_tickets.index', [
-            'repairTickets' => $repairTickets
+                $q->where('id', 'like', "%{$search}%")
+                    ->orWhere('service_type', 'like', "%{$search}%")
+
+                    ->orWhereHas('device', function ($device) use ($search) {
+                        $device->where('brand', 'like', "%{$search}%")
+                            ->orWhere('model', 'like', "%{$search}%")
+                            ->orWhere('serial_or_imei', 'like', "%{$search}%");
+                    })
+
+                    ->orWhereHas('device.customer', function ($customer) use ($search) {
+                        $customer->where('name', 'like', "%{$search}%")
+                            ->orWhere('phone', 'like', "%{$search}%");
+                    });
+            });
+        }
+        
+        // Status Filter
+        if (
+            $request->filled('status') &&
+            $request->status !== 'all'
+        ) {
+            $query->where('status', $request->status);
+        }
+
+        // Technician Filter
+        if (
+            $request->filled('technician') &&
+            $request->technician !== 'all'
+        ) {
+            $query->where('assigned_to', $request->technician);
+        }
+
+        $repairTickets = $query
+            ->latest()
+            ->paginate(10)
+            ->appends($request->query());
+
+        $technicians = User::where('role', 'staff')
+            ->where('status', 'active')
+            ->orderBy('name')
+            ->get();
+
+        return view('repair.repair-management', [
+            'repairs' => $repairTickets,
+            'technicians' => $technicians,
         ]);
     }
-
 
     // =========================================================
     // 2. DISPLAY CREATE FORM
     // =========================================================
     public function create()
     {
-        // Get all devices.
-        //
-        // with('customer') also gets the customer
-        // who owns each device.
-        //
-        // This is useful when showing devices in the
-        // create repair ticket form.
-        $devices = Device::with('customer')->get();
-
-
-        // Get users who:
-        // 1. Have the role "staff"
-        // 2. Have an "active" status
-        //
-        // These users can be selected as the
-        // staff member assigned to the repair.
         $users = User::where('role', 'staff')
             ->where('status', 'active')
             ->get();
 
+        $serviceTypes = ServiceType::orderBy('name')->get();
 
-        // Open the create repair ticket form.
-        //
-        // Send the devices and staff users to the view.
-        return view('repair_tickets.create', [
-            'devices' => $devices,
-            'users'   => $users
+        return view('repair.add-ticket', [
+            'users' => $users,
+            'serviceTypes' => $serviceTypes
         ]);
     }
 
@@ -88,186 +104,88 @@ class RepairTicketController extends Controller
     // =========================================================
     public function store(Request $request)
     {
-        // Validate the information submitted from the form.
+        // Validate request strictly adhering to business rules
         $request->validate([
+            // Customer Info (*)
+            'customer_name' => 'required|string|max:100',
+            'phone_number'  => 'required|string|max:20',
+            'address'       => 'nullable|string|max:255',
 
-            // A device must be selected.
-            // The device ID must exist in the devices table.
-            'device_id' =>
-                'required|exists:devices,id',
+            // Device Info (*)
+            'brand'          => 'required|string|max:50',
+            'model'          => 'required|string|max:100',
+            'serial_or_imei' => 'nullable|string|max:100',
 
+            // Repair Info (*)
+            'service_type'        => 'required|string|max:100',
+            'problem_description' => 'nullable|string',
+            'assigned_to'          => 'required|exists:users,id',
+            'quotation_price'     => 'nullable|numeric|min:0',
 
-            // A staff member can be assigned,
-            // but assigning one is optional.
-            //
-            // If an ID is provided, it must exist
-            // in the users table.
-            'assigned_to' =>
-                'nullable|exists:users,id',
-
-
-            // The repair problem must be provided.
-            // It must be text.
-            'problem_description' =>
-                'required|string',
-
-
-            // Quotation price is optional.
-            // If provided, it must be a number
-            // and cannot be negative.
-            'quotation_price' =>
-                'nullable|numeric|min:0',
-
-
-            // Final price is also optional.
-            // If provided, it must be a number
-            // and cannot be negative.
-            'final_price' =>
-                'nullable|numeric|min:0',
-
-
-            // Status is required.
-            //
-            // Only these four values are allowed.
-            'status' =>
-                'required|in:pending,in_progress,completed,cancelled',
-
-
-            // Date received is required
-            // and must be a valid date.
-            'date_received' =>
-                'required|date',
-
-
-            // Date completed is optional.
-            //
-            // If provided, it must be a valid date
-            // and cannot be earlier than date_received.
-            'date_completed' =>
-                'nullable|date|after_or_equal:date_received',
+            // Photos
+            'photos.*' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
         ]);
 
-
-        // =====================================================
-        // DATABASE TRANSACTION
-        // =====================================================
-        //
-        // A transaction groups multiple database operations
-        // together.
-        //
-        // If something fails inside this block,
-        // Laravel can roll back the database changes.
         DB::transaction(function () use ($request) {
 
+            // 1. Find or create Customer
+            $customer = Customer::firstOrCreate(
+                ['phone' => $request->input('phone_number')],
+                [
+                    'name'    => $request->input('customer_name'),
+                    'address' => $request->input('address'),
+                ]
+            );
 
-            // =================================================
-            // CREATE THE REPAIR TICKET
-            // =================================================
+            // 2. Register Device connected to Customer
+            $device = new Device();
+            $device->customer_id    = $customer->id;
+            $device->brand          = $request->input('brand');
+            $device->model          = $request->input('model');
+            $device->serial_or_imei = $request->input('serial_or_imei');
+            $device->save();
 
-            // Create a new RepairTicket object.
+            // 3. Create Repair Ticket
             $repairTicket = new RepairTicket();
+            $repairTicket->device_id           = $device->id;
+            $repairTicket->assigned_to         = $request->input('assigned_to');
+            $repairTicket->service_type        = $request->input('service_type');
+            $repairTicket->problem_description = $request->input('problem_description') ?? '';
+            $repairTicket->quotation_price     = $request->input('quotation_price') ?? 0;
+            $repairTicket->final_price         = $request->input('quotation_price') ?? 0;
 
-
-            // Get the device ID from the form.
-            $repairTicket->device_id =
-                $request->input('device_id');
-
-
-            // Get the assigned staff/user ID.
-            $repairTicket->assigned_to =
-                $request->input('assigned_to');
-
-
-            // Get the customer's reported problem.
-            $repairTicket->problem_description =
-                $request->input('problem_description');
-
-
-            // Get the quotation price.
-            $repairTicket->quotation_price =
-                $request->input('quotation_price');
-
-
-            // Get the final repair price.
-            $repairTicket->final_price =
-                $request->input('final_price');
-
-
-            // Get the current repair status.
-            $repairTicket->status =
-                $request->input('status');
-
-
-            // Get the date when the device was received.
-            $repairTicket->date_received =
-                $request->input('date_received');
-
-
-            // Get the completion date.
-            $repairTicket->date_completed =
-                $request->input('date_completed');
-
-
-            // Save the repair ticket into the database.
-            //
-            // After save(), the new repair ticket gets
-            // its database ID.
+            // Automatic Business Rules:
+            $repairTicket->status        = 'pending';
+            $repairTicket->date_received = now();
             $repairTicket->save();
 
-
-            // =================================================
-            // CREATE INITIAL STATUS HISTORY
-            // =================================================
-
-            // Create a new status history record.
-            //
-            // This records the initial status of the
-            // newly created repair ticket.
+            // 4. Initial Repair Status History
             $history = new RepairStatusHistory();
-
-
-            // Connect the history record to the repair ticket.
-            //
-            // Example:
-            // repair_ticket_id = 10
-            $history->repair_ticket_id =
-                $repairTicket->id;
-
-
-            // Store the current status.
-            //
-            // Example:
-            // pending
-            $history->status =
-                $repairTicket->status;
-
-
-            // Store the ID of the logged-in user
-            // who created/changed the status.
-            $history->changed_by =
-                auth()->id();
-
-
-            // Store the current date and time.
-            $history->changed_at =
-                now();
-
-
-            // Save the status history record.
+            $history->repair_ticket_id = $repairTicket->id;
+            $history->status = 'pending';
+            $history->changed_by = \Illuminate\Support\Facades\Auth::id() ?? \App\Models\User::first()?->id ?? 6;
+            $history->changed_at = now();
             $history->save();
+
+            // 5. Save Intake Photos (if uploaded)
+            if ($request->hasFile('photos')) {
+                foreach ($request->file('photos') as $photoFile) {
+                    $path = $photoFile->store('repair-photos', 'public');
+
+                    $photo = new DevicePhoto();
+                    $photo->repair_ticket_id = $repairTicket->id;
+                    $photo->photo_path = $path;
+                    $photo->photo_type = 'intake';
+                    $photo->uploaded_by = \Illuminate\Support\Facades\Auth::id() ?? \App\Models\User::first()?->id ?? 6;
+                    $photo->uploaded_at = now();
+                    $photo->save();
+                }
+            }
         });
 
-
-        // After the transaction is successfully completed,
-        // return to the repair ticket list.
         return redirect()
             ->route('repair-tickets.index')
-
-            // Display a success message.
-            ->with(
-                'success',
-                'Repair ticket created successfully.'
-            );
+            ->with('success', 'Repair ticket registered successfully.');
     }
 
 
@@ -361,45 +279,45 @@ class RepairTicketController extends Controller
 
             // Device is required and must exist.
             'device_id' =>
-                'required|exists:devices,id',
+            'required|exists:devices,id',
 
 
             // Assigned staff is optional.
             'assigned_to' =>
-                'nullable|exists:users,id',
+            'nullable|exists:users,id',
 
 
             // Problem description is required.
             'problem_description' =>
-                'required|string',
+            'required|string',
 
 
             // Quotation price is optional
             // but cannot be negative.
             'quotation_price' =>
-                'nullable|numeric|min:0',
+            'nullable|numeric|min:0',
 
 
             // Final price is optional
             // but cannot be negative.
             'final_price' =>
-                'nullable|numeric|min:0',
+            'nullable|numeric|min:0',
 
 
             // Only these statuses are allowed.
             'status' =>
-                'required|in:pending,in_progress,completed,cancelled',
+            'required|in:pending,in_progress,completed,cancelled',
 
 
             // Date received must be a valid date.
             'date_received' =>
-                'required|date',
+            'required|date',
 
 
             // Completion date cannot be earlier
             // than the received date.
             'date_completed' =>
-                'nullable|date|after_or_equal:date_received',
+            'nullable|date|after_or_equal:date_received',
         ]);
 
 
@@ -510,7 +428,7 @@ class RepairTicketController extends Controller
 
                 // Store who changed the status.
                 $history->changed_by =
-                    auth()->id();
+                    \Illuminate\Support\Facades\Auth::id() ?? \App\Models\User::first()?->id ?? 6;
 
 
                 // Store when the status was changed.
@@ -563,5 +481,21 @@ class RepairTicketController extends Controller
                 'success',
                 'Repair ticket deleted successfully.'
             );
+    }
+
+    public function storeServiceType(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:100|unique:service_types,name',
+        ]);
+
+        ServiceType::create([
+            'name' => $request->name,
+        ]);
+
+        return back()->with(
+            'success',
+            'Service type added successfully.'
+        );
     }
 }

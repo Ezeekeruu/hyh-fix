@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('device_id')->constrained('devices');
             $table->foreignId('assigned_to') ->nullable() ->constrained('users');
+            $table->string('service_type');
             $table->text('problem_description');
             $table->decimal('quotation_price', 10,);
             $table->decimal('final_price', 10, 2);

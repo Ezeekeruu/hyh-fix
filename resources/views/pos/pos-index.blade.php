@@ -37,7 +37,12 @@
                     POS
                 </a>
 
-                <a href="{{ route('transaction.index') }}" class="nav-link">
+                <a href="{{ url('/repair-management') }}" class="nav-link ">
+                    <i class="fa-solid fa-wrench"></i>
+                    Repair Management
+                </a>
+
+                <a href="{{ route('transaction.history') }}" class="nav-link">
                     <i class="fa-regular fa-clipboard"></i>
                     Transaction History
                 </a>
@@ -100,53 +105,105 @@
                 <!-- PRODUCTS PANEL -->
                 <section class="products-panel">
 
-                    <!-- SEARCH -->
-                    <div class="search-bar">
-                        <i class="fa-solid fa-magnifying-glass"></i>
-                        <input type="text" id="pos-search" placeholder="Search products by name or SKU...">
-                    </div>
+                    <!-- FILTER & SEARCH BAR (Matching User Management Layout & Styling) -->
+                    <div class="inventory-actions-bar">
+                        <form id="pos-filter-form" onsubmit="event.preventDefault(); filterAndSortProducts();" style="display: flex; gap: 10px; align-items: center; width: 100%;">
 
-                    <!-- CATEGORY TABS -->
-                    <div class="category-tabs" id="category-tabs">
-                        <button class="cat-tab active" data-category="all">All Items</button>
-                        <!-- Additional categories can be generated dynamically -->
+                            <!-- 1. Search Box with Search Button -->
+                            <div class="search-box">
+                                <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                                <input type="text" id="pos-search" placeholder="Search products by name or SKU...">
+                                <button type="submit" class="search-btn">
+                                    Search
+                                </button>
+                            </div>
+
+                            <!-- 2. Category Dropdown Filter -->
+                            <div class="filter-dropdown">
+                                <select id="category-filter" name="category">
+                                    <option value="all">All Categories</option>
+                                    @if (isset($categories))
+                                    @foreach($categories as $category)
+                                    <option value="{{ strtolower($category->category_name) }}">{{ $category->category_name }}</option>
+                                    @endforeach
+                                    @endif
+                                </select>
+                            </div>
+
+                            <!-- 3. Price Sorting Dropdown -->
+                            <div class="filter-dropdown small-select">
+                                <select id="price-sort" name="price_sort">
+                                    <option value="default" disabled selected>Sort by Price</option>
+                                    <option value="low-high">Price: Low to High</option>
+                                    <option value="high-low">Price: High to Low</option>
+                                </select>
+                            </div>
+
+                            <!-- 4. Filter Clear Button -->
+                            <button type="button" class="btn-filter-icon" id="clear-filters-btn" title="Clear filters">
+                                <i class="fa-solid fa-filter-circle-xmark"></i>
+                            </button>
+
+                        </form>
                     </div>
 
                     <!-- PRODUCT GRID -->
                     <div class="product-grid" id="product-grid">
-                        @if($products->count() > 0)
+                        @if ($products->count() > 0)
                         @foreach($products as $product)
                         <div class="product-card"
                             data-id="{{ $product->id }}"
                             data-name="{{ $product->product_name }}"
                             data-price="{{ $product->sell_price }}"
                             data-stock="{{ $product->stock_quantity }}"
-                            data-sku="{{ $product->sku }}">
+                            data-sku="{{ $product->sku }}"
+                            data-image="{{ $product->image_url }}"
+                            data-category="{{ strtolower($product->category->category_name ?? '') }}">
+
                             <div class="product-top">
-                                <span class="product-tag">{{ $product->category->category_name ?? 'Item' }}</span>
+                                <span class="product-tag">
+                                    {{ $product->category->category_name ?? 'Item' }}
+                                </span>
+
                                 <span class="stock-tag {{ $product->stock_quantity <= 5 ? 'warning' : '' }}">
                                     Stock: {{ $product->stock_quantity }}
                                 </span>
                             </div>
-                            <div class="product-image"></div>
+
+                            <div class="product-image">
+                                @if($product->image_path)
+                                <img src="{{ asset('storage/' . $product->image_path) }}"
+                                    alt="{{ $product->product_name }}">
+                                @else
+                                <div class="no-image">
+                                    No Image
+                                </div>
+                                @endif
+                            </div>
+
                             <div class="product-info">
                                 <h4>{{ $product->product_name }}</h4>
                                 <p>SKU: {{ $product->sku }}</p>
                             </div>
+
                             <div class="product-bottom">
                                 <div class="product-price">
                                     <span>PHP</span>
                                     <strong>₱{{ number_format($product->sell_price, 2) }}</strong>
                                 </div>
-                                <button type="button" class="add-btn" onclick="addToCartFromCard(this)">
-                                    <i class="fa-solid fa-plus"></i>
-                                    Add
+
+                                <button type="button"
+                                    class="add-btn"
+                                    onclick="addToCartFromCard(this)"> Add
+                                   
                                 </button>
                             </div>
                         </div>
                         @endforeach
                         @else
-                        <p style="grid-column: 1 / -1; text-align: center; padding: 20px;">No products available for sale.</p>
+                        <p style="grid-column: 1 / -1; text-align: center; padding: 20px;">
+                            No products available for sale.
+                        </p>
                         @endif
                     </div>
 
@@ -168,7 +225,10 @@
                                     <button type="button" class="icon-btn" title="Clear Cart" onclick="clearCart()"><i class="fa-regular fa-trash-can"></i></button>
                                 </div>
                             </div>
-                            <p class="order-meta">Register — Cashier</p>
+                            <p class="order-meta" style="margin-bottom: 5px;">
+                                Register —
+                                <span>{{ auth()->check() ? auth()->user()->name : 'Cashier' }}</span>
+                            </p>
                         </div>
 
                         <!-- CUSTOMER BOX -->
@@ -228,7 +288,7 @@
                             <p class="section-label">CASH RECEIVED</p>
                             <div class="cash-input">
                                 <span>₱</span>
-                                <input type="number" step="0.01" id="cash-received-input" value="0.00" oninput="calculateChange()">
+                                <input type="text" inputmode="decimal" autocomplete="off" id="cash-received-input" value="0.00" oninput="calculateChange()" onfocus="this.select()">
                             </div>
                             <div class="quick-cash">
                                 <button type="button" onclick="setQuickCash('exact')">Exact</button>
@@ -256,14 +316,43 @@
 
     </div>
 
+    <!-- Notice modal (styled replacement for native alert()) -->
+    <div class="notice-overlay" id="notice-overlay">
+        <div class="notice-card" role="alertdialog" aria-modal="true">
+            <div class="notice-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+            <h3 id="notice-title">Notice</h3>
+            <p id="notice-message"></p>
+            <button type="button" class="notice-ok" id="notice-ok">OK</button>
+        </div>
+    </div>
+
     <script>
         let cart = [];
 
-        function addToCart(id, name, price, stock) {
+        // Styled notice modal (replaces native alert())
+        function showNotice(message, title) {
+            document.getElementById('notice-title').textContent = title || 'Notice';
+            document.getElementById('notice-message').textContent = message;
+            document.getElementById('notice-overlay').classList.add('show');
+        }
+
+        function closeNotice() {
+            document.getElementById('notice-overlay').classList.remove('show');
+        }
+
+        document.getElementById('notice-ok').addEventListener('click', closeNotice);
+        document.getElementById('notice-overlay').addEventListener('click', function (e) {
+            if (e.target === this) closeNotice();
+        });
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') closeNotice();
+        });
+
+        function addToCart(id, name, price, stock, image) {
             let item = cart.find(i => i.id === id);
             if (item) {
                 if (item.quantity + 1 > stock) {
-                    alert(`Cannot add more. Only ${stock} items in stock.`);
+                    showNotice(`Cannot add more. Only ${stock} items in stock.`, 'Out of Stock');
                     return;
                 }
                 item.quantity += 1;
@@ -273,6 +362,7 @@
                     name,
                     price,
                     stock,
+                    image,
                     quantity: 1
                 });
             }
@@ -285,19 +375,9 @@
             let name = card.getAttribute('data-name');
             let price = parseFloat(card.getAttribute('data-price'));
             let stock = parseInt(card.getAttribute('data-stock'));
+            let image = card.getAttribute('data-image');
 
-            addToCart(id, name, price, stock);
-        }
-
-        // Add Product to Cart
-        function addToCartFromCard(button) {
-            let card = button.closest('.product-card');
-            let id = parseInt(card.getAttribute('data-id'));
-            let name = card.getAttribute('data-name');
-            let price = parseFloat(card.getAttribute('data-price'));
-            let stock = parseInt(card.getAttribute('data-stock'));
-
-            addToCart(id, name, price, stock);
+            addToCart(id, name, price, stock, image);
         }
 
         // Update Quantity
@@ -306,7 +386,7 @@
             if (!item) return;
 
             if (item.quantity + delta > item.stock) {
-                alert(`Cannot exceed available stock of ${item.stock}.`);
+                showNotice(`Cannot exceed available stock of ${item.stock}.`, 'Out of Stock');
                 return;
             }
 
@@ -351,10 +431,14 @@
                 let itemSubtotal = item.price * item.quantity;
                 total += itemSubtotal;
 
-                // Render visible item
                 let itemHtml = `
                 <div class="cart-item">
-                    <div class="cart-item-image"></div>
+                    <div class="cart-item-image">
+    ${item.image
+        ? `<img src="${item.image}" alt="${item.name}">`
+        : ''
+    }
+</div>
                     <div class="cart-item-info">
                         <h5>${item.name}</h5>
                         <span>₱${item.price.toFixed(2)} each</span>
@@ -369,7 +453,6 @@
             `;
                 container.insertAdjacentHTML('beforeend', itemHtml);
 
-                // Render hidden input fields for backend submission
                 let hiddenHtml = `
                 <input type="hidden" name="products[${index}][id]" value="${item.id}">
                 <input type="hidden" name="products[${index}][quantity]" value="${item.quantity}">
@@ -406,7 +489,8 @@
         // Calculate Change Due
         function calculateChange() {
             let total = getCartTotal();
-            let cashReceived = parseFloat(document.getElementById('cash-received-input').value) || 0;
+            let raw = document.getElementById('cash-received-input').value.replace(/[^0-9.]/g, '');
+            let cashReceived = parseFloat(raw) || 0;
             let change = cashReceived - total;
 
             const changeDisplay = document.getElementById('change-due-display');
@@ -422,37 +506,79 @@
             return cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
         }
 
-        // Live Product Search Filter
-        document.getElementById('pos-search').addEventListener('input', function(e) {
-            let term = e.target.value.toLowerCase();
-            let cards = document.querySelectorAll('#product-grid .product-card');
+        // Combined Product Search, Category Filter, and Price Sorting
+        const searchInput = document.getElementById('pos-search');
+        const categoryFilter = document.getElementById('category-filter');
+        const priceSort = document.getElementById('price-sort');
+        const clearBtn = document.getElementById('clear-filters-btn');
+        const productGrid = document.getElementById('product-grid');
+
+        // 1. Capture original product order on page load
+        const originalCards = Array.from(document.querySelectorAll('#product-grid .product-card'));
+
+        function filterAndSortProducts() {
+            let term = searchInput.value.toLowerCase().trim();
+            let selectedCategory = categoryFilter.value.toLowerCase();
+            let sortValue = priceSort.value;
+
+            // 2. Work with a fresh copy of the original order
+            let cards = [...originalCards];
 
             cards.forEach(card => {
-                let name = card.getAttribute('data-name').toLowerCase();
-                let sku = card.getAttribute('data-sku').toLowerCase();
-                if (name.includes(term) || sku.includes(term)) {
+                let name = (card.getAttribute('data-name') || '').toLowerCase();
+                let sku = (card.getAttribute('data-sku') || '').toLowerCase();
+                let category = (card.getAttribute('data-category') || '').toLowerCase();
+
+                let matchesSearch = name.includes(term) || sku.includes(term);
+                let matchesCategory = (selectedCategory === 'all' || category === selectedCategory);
+
+                if (matchesSearch && matchesCategory) {
                     card.style.display = 'flex';
                 } else {
                     card.style.display = 'none';
                 }
             });
-        });
+
+            // 3. Apply sorting or keep default initial order
+            if (sortValue === 'low-high') {
+                cards.sort((a, b) => parseFloat(a.getAttribute('data-price')) - parseFloat(b.getAttribute('data-price')));
+            } else if (sortValue === 'high-low') {
+                cards.sort((a, b) => parseFloat(b.getAttribute('data-price')) - parseFloat(a.getAttribute('data-price')));
+            }
+
+            // 4. Re-append in correct order
+            cards.forEach(card => productGrid.appendChild(card));
+        }
+
+        if (searchInput) searchInput.addEventListener('input', filterAndSortProducts);
+        if (categoryFilter) categoryFilter.addEventListener('change', filterAndSortProducts);
+        if (priceSort) priceSort.addEventListener('change', filterAndSortProducts);
+
+        if (clearBtn) {
+            clearBtn.addEventListener('click', function() {
+                if (searchInput) searchInput.value = '';
+                if (categoryFilter) categoryFilter.value = 'all';
+                if (priceSort) priceSort.value = 'default';
+                filterAndSortProducts();
+            });
+        }
 
         // Form submit validation
         document.getElementById('pos-form').addEventListener('submit', function(e) {
             if (cart.length === 0) {
                 e.preventDefault();
-                alert('Please add at least one product to the order.');
+                showNotice('Please add at least one product to the order.', 'Empty Order');
                 return;
             }
 
             let total = getCartTotal();
-            let cashReceived = parseFloat(document.getElementById('cash-received-input').value) || 0;
+            let rawCash = document.getElementById('cash-received-input').value.replace(/[^0-9.]/g, '');
+            let cashReceived = parseFloat(rawCash) || 0;
             let paymentMethod = document.getElementById('payment-method-input').value;
 
             if (paymentMethod === 'Cash' && cashReceived < total) {
                 e.preventDefault();
-                alert('Cash received is less than the total due.');
+                showNotice('Cash received is less than the total due.', 'Insufficient Cash');
             }
         });
     </script>

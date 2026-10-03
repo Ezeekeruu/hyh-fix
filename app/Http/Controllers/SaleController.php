@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Category;
 use App\Models\Customer;
 use App\Models\Product;
 use App\Models\Sale;
@@ -49,31 +50,23 @@ class SaleController extends Controller
     // =========================================================
     public function create()
     {
-        // Get all customers.
-        //
-        // orderBy() sorts the customers alphabetically
-        // according to their name.
+        // Get all customers sorted alphabetically
         $customers = Customer::orderBy('name')->get();
 
+        // Get all categories for the POS dropdown filter
+        $categories = Category::orderBy('category_name')->get();
 
-        // Get only products that currently have stock.
-        //
-        // stock_quantity > 0 means:
-        // only products that are available for sale.
-        //
-        // The products are sorted alphabetically.
-        $products = Product::where('stock_quantity', '>', 0)
+        // Get available products with their category relationship loaded
+        $products = Product::with('category')
+            ->where('stock_quantity', '>', 0)
             ->orderBy('product_name')
             ->get();
 
-
-        // Open the POS/create sale page.
-        //
-        // Send customers and available products
-        // to the Blade view.
+        // Open the POS page and send customers, categories, and products
         return view('pos.pos-index', [
-            'customers' => $customers,
-            'products' => $products
+            'customers'  => $customers,
+            'categories' => $categories, // <--- PASS CATEGORIES HERE
+            'products'   => $products,
         ]);
     }
 
@@ -149,7 +142,7 @@ class SaleController extends Controller
             // Get the ID of the currently logged-in user.
             //
             // This records which staff/user processed the sale.
-            $sale->user_id = Auth::id();
+            $sale->user_id = Auth::id() ?? \App\Models\User::first()?->id ?? 6;
 
 
             // Store the current date and time.
@@ -364,7 +357,7 @@ class SaleController extends Controller
         // After the transaction succeeds,
         // return to the sales list.
         return redirect()
-            ->route('sales.index')
+            ->route('pos.index')
 
             // Display a success message.
             ->with(
@@ -395,7 +388,7 @@ class SaleController extends Controller
 
 
         // Open the sale details page.
-        return view('sales.show', [
+        return view('transactions.transaction-receipt', [
             'sale' => $sale
         ]);
     }
@@ -629,5 +622,103 @@ class SaleController extends Controller
                 'success',
                 'Sale deleted successfully.'
             );
+    }
+
+    public function transactionHistory(Request $request)
+    {
+        $query = Sale::with([
+            'customer',
+            'saleItems.product'
+        ]);
+
+        // Search
+        if ($request->filled('search')) {
+
+            $search = $request->search;
+
+            $query->where(function ($q) use ($search) {
+
+                // Transaction ID
+                $q->where('id', 'like', "%{$search}%")
+
+                    // Customer
+                    ->orWhereHas('customer', function ($customer) use ($search) {
+
+                        $customer->where('name', 'like', "%{$search}%")
+                            ->orWhere('phone', 'like', "%{$search}%");
+                    })
+
+                    // Product Name or SKU
+                    ->orWhereHas('saleItems.product', function ($product) use ($search) {
+
+                        $product->where('product_name', 'like', "%{$search}%")
+                            ->orWhere('sku', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        // Payment Method Filter
+        if (
+            $request->filled('payment_method')
+            &&
+            $request->payment_method !== 'all'
+        ) {
+
+            $query->whereRaw(
+                'LOWER(payment_method) = ?',
+                [strtolower($request->payment_method)]
+            );
+        }
+
+        // Status Filter
+        if (
+            $request->filled('status')
+            &&
+            $request->status !== 'all'
+        ) {
+
+            $query->where(
+                'status',
+                $request->status
+            );
+        }
+
+        // Date Filter
+        if ($request->date === 'today') {
+
+            $query->whereDate('sale_date', today());
+        } elseif ($request->date === 'this_week') {
+
+            $query->whereBetween('sale_date', [
+                now()->startOfWeek(),
+                now()->endOfWeek()
+            ]);
+        } elseif ($request->date === 'this_month') {
+
+            $query->whereMonth('sale_date', now()->month)
+                ->whereYear('sale_date', now()->year);
+        } elseif ($request->date === 'custom') {
+
+            if ($request->filled('start_date') && $request->filled('end_date')) {
+                $query->whereBetween('sale_date', [
+                    $request->start_date . ' 00:00:00',
+                    $request->end_date . ' 23:59:59'
+                ]);
+            } elseif ($request->filled('start_date')) {
+                $query->whereDate('sale_date', '>=', $request->start_date);
+            } elseif ($request->filled('end_date')) {
+                $query->whereDate('sale_date', '<=', $request->end_date);
+            }
+        }
+
+        $sales = $query
+            ->latest('sale_date')
+            ->paginate(10)
+            ->withQueryString();
+
+        return view(
+            'transactions.transactions-index',
+            compact('sales')
+        );
     }
 }

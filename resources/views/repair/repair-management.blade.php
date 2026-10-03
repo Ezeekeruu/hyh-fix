@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>User Management - HYH FIX</title>
+    <title>Repair Management - HYH FIX</title>
 
     <!-- Inter Font -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -13,7 +13,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
 
     <!-- Stylesheet -->
-    <link rel="stylesheet" href="{{ asset('css/users.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/repair.css') }}">
 </head>
 
 <body>
@@ -37,7 +37,7 @@
                     POS
                 </a>
 
-                <a href="{{ url('/repair-management') }}" class="nav-link">
+                <a href="{{ url('/repair-management') }}" class="nav-link active">
                     <i class="fa-solid fa-wrench"></i>
                     Repair Management
                 </a>
@@ -57,7 +57,7 @@
                     Reports
                 </a>
 
-                <a href="{{ url('/user-management') }}" class="nav-link active">
+                <a href="{{ url('/user-management') }}" class="nav-link">
                     <i class="fa-solid fa-users"></i>
                     User Management
                 </a>
@@ -80,7 +80,7 @@
                     <button class="menu-btn" type="button">
                         <i class="fa-solid fa-bars"></i>
                     </button>
-                    <h2>USER MANAGEMENT</h2>
+                    <h2>REPAIR MANAGEMENT</h2>
                 </div>
 
                 <div class="topbar-right">
@@ -105,97 +105,111 @@
                 <div class="inventory-actions-bar">
 
                     <!-- Combined Filter Form -->
-                    <form action="{{ url('/user-management') }}" method="GET" style="display: flex; gap: 10px; align-items: center; width: 100%;">
+                    <form action="{{ url('/repair-management') }}" method="GET" style="display: flex; gap: 10px; align-items: center; width: 100%;">
 
                         <!-- 1. Search Box -->
                         <div class="search-box">
                             <i class="fa-solid fa-magnifying-glass search-icon"></i>
-                            <input type="text" name="search" value="{{ request('search') }}" placeholder="Search by name, User ID, or email...">
+                            <input type="text" name="search" value="{{ request('search') }}" placeholder="Search ticket #, customer, or device...">
                             <button type="submit" class="search-btn">
                                 Search
                             </button>
                         </div>
 
-                        <!-- 2. Role Dropdown -->
+                        <!-- 2. Status Dropdown -->
                         <div class="filter-dropdown">
-                            <select name="role" onchange="this.form.submit()">
-                                <option value="all" {{ request('role') == 'all' || !request('role') ? 'selected' : '' }}>All Roles</option>
-                                <option value="admin" {{ request('role') == 'admin' ? 'selected' : '' }}>Manager</option>
-                                <option value="staff" {{ request('role') == 'staff' ? 'selected' : '' }}>Staff</option>
+                            <select name="status" onchange="this.form.submit()">
+                                <option value="all" {{ request('status') == 'all' || !request('status') ? 'selected' : '' }}>All Status</option>
+                                <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pending</option>
+                                <option value="completed" {{ request('status') == 'completed' ? 'selected' : '' }}>Completed</option>
                             </select>
                         </div>
 
-                        <!-- 3. Status Dropdown -->
+                        <!-- 3. Technician Dropdown -->
                         <div class="filter-dropdown small-select">
-                            <select name="status" onchange="this.form.submit()">
-                                <option value="all" {{ request('status') == 'all' || !request('status') ? 'selected' : '' }}>All Status</option>
-                                <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>Active</option>
-                                <option value="disabled" {{ request('status') == 'disabled' ? 'selected' : '' }}>Disabled</option>
+                            <select name="technician" onchange="this.form.submit()">
+                                <option value="all" {{ request('technician') == 'all' || !request('technician') ? 'selected' : '' }}>All Technicians</option>
+                                @foreach($technicians ?? [] as $tech)
+                                <option value="{{ $tech->id }}" {{ request('technician') == $tech->id ? 'selected' : '' }}>{{ $tech->name }}</option>
+                                @endforeach
                             </select>
                         </div>
 
                         <!-- 4. Clear Filters Button -->
-                        <a href="{{ url('/user-management') }}" class="btn-filter-icon" title="Clear filters">
+                        <a href="{{ url('/repair-management') }}" class="btn-filter-icon" title="Clear filters">
                             <i class="fa-solid fa-filter-circle-xmark"></i>
                         </a>
 
-                        <!-- 5. Add New User Button -->
-                        <a href="{{ url('/user-management/add') }}" class="btn-add-product" style="margin-left: auto; text-decoration: none; ">
-                            <i class="fa-solid fa-user-plus"></i>
-                            Add New User
+                        <!-- 5. Create Repair Ticket Button -->
+                        <a href="{{ url('/repair-management/create') }}" class="btn-add-product" style="margin-left: auto; text-decoration: none;">
+                            <i class="fa-solid fa-circle-plus"></i>
+                            New Ticket
                         </a>
 
                     </form>
 
                 </div>
 
-                <!-- Users Table -->
+                <!-- Repairs Table -->
                 <div class="table-wrapper">
                     <table>
                         <thead>
                             <tr>
-                                <th>USER ID</th>
-                                <th>FULL NAME</th>
-                                <th>ROLE</th>
-                                <th>ACCOUNT STATUS</th>
-                                <th>JOINED</th>
+                                <th>TICKET #</th>
+                                <th>CUSTOMER</th>
+                                <th>DEVICE</th>
+                                <th>SERVICE TYPE</th>
+                                <th>EST. PRICE</th>
+                                <th>TECHNICIAN</th>
+                                <th>STATUS</th>
+                                <th>RECEIVED DATE</th>
                                 <th>ACTIONS</th>
                             </tr>
                         </thead>
                         <tbody>
-                            @forelse($users as $user)
+                            @forelse($repairs as $repair)
                             <tr>
-                                <td class="user-id-cell">{{ $user->id }}</td>
+                                <td class="user-id-cell">#{{ $repair->id }}</td>
                                 <td>
-                                    <div class="user-info-cell">
-                                        <div class="user-avatar">
-                                            {{ strtoupper(substr($user->name, 0, 2)) }}
-                                            <span class="presence-dot {{ $user->status == 'active' ? 'active' : '' }}"></span>
-                                        </div>
-                                        <div class="user-details">
-                                            <div class="user-name">{{ $user->name }}</div>
-                                            <div class="user-email">{{ $user->email }}</div>
-                                        </div>
+                                    <div class="user-details">
+                                        <div class="user-name">{{ $repair->device?->customer?->name ?? 'N/A' }}</div>
+                                        <div class="user-email">{{ $repair->device?->customer?->phone ?? 'N/A' }}</div>
                                     </div>
                                 </td>
                                 <td>
-                                    <span class="role-badge {{ $user->role }}">
-                                        {{ ucfirst($user->role) }}
+                                    <div class="user-details">
+                                        <div class="user-name">{{ ($repair->device?->brand ?? '') . ' ' . ($repair->device?->model ?? 'N/A') }}</div>
+                                        <div class="user-email">{{ $repair->device?->serial_or_imei ?? 'S/N' }}</div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="category-badge">
+                                        {{ $repair->service_type }}
                                     </span>
                                 </td>
                                 <td>
-                                    <span class="status-badge {{ $user->status }}">
+                                    ₱{{ number_format($repair->quotation_price ?? 0, 2) }}
+                                </td>
+                                <td>
+                                    <span class="role-badge technician">
+                                        {{ $repair->assignedUser?->name ?? 'Unassigned' }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="status-badge {{ str_replace('_', '-', $repair->status) }}">
                                         <span class="status-dot"></span>
-                                        {{ ucfirst($user->status) }}
+                                        {{ ucfirst(str_replace('_', ' ', $repair->status)) }}
                                     </span>
                                 </td>
-                                <td class="joined-cell">{{ $user->created_at ? $user->created_at->format('M d, Y') : 'N/A' }}</td>
+                                <td class="joined-cell">
+                                    {{ $repair->date_received? \Carbon\Carbon::parse($repair->date_received)->format('M d, Y'): 'N/A'}}
+                                </td>
                                 <td>
-                                    <div class="action-buttons" style="display: flex; justify-content: center; align-items: center;">
-                                        <a href="{{ url('/user-management/' . $user->id . '/edit') }}" class="btn-icon" title="Edit">
+                                    <div class="action-buttons" style="display: flex; justify-content: center; align-items: center; gap: 8px;">
+                                        <a href="{{ url('/repair-management/' . $repair->id . '/edit') }}" class="btn-icon" title="Edit Ticket">
                                             <i class="fa-solid fa-pen"></i>
                                         </a>
-                                        <form action="{{ url('/user-management/' . $user->id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Delete this user permanently? This cannot be undone.');">
+                                        <form action="{{ url('/repair-management/' . $repair->id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Delete this repair ticket? This action cannot be undone.');">
                                             @csrf
                                             @method('DELETE')
                                             <button class="btn-icon danger" type="submit" title="Delete">
@@ -207,8 +221,8 @@
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="6" style="text-align: center; padding: 20px; color: #6b7280;">
-                                    No staff accounts found.
+                                <td colspan="8" style="text-align: center; padding: 20px; color: #6b7280;">
+                                    No repair tickets found.
                                 </td>
                             </tr>
                             @endforelse
@@ -219,25 +233,25 @@
                 <!-- Table Footer / Pagination -->
                 <div class="table-footer">
                     <div class="pagination-info">
-                        Showing <span>{{ $users->firstItem() ?? 0 }}</span>-<span>{{ $users->lastItem() ?? 0 }}</span> of <span>{{ $users->total() }}</span> staff accounts
+                        Showing <span>{{ $repairs->firstItem() ?? 0 }}</span>-<span>{{ $repairs->lastItem() ?? 0 }}</span> of <span>{{ $repairs->total() }}</span> tickets
                     </div>
 
                     <div class="pagination">
                         {{-- Previous Page Button --}}
-                        @if ($users->onFirstPage())
+                        @if ($repairs->onFirstPage())
                         <button class="page-btn prev" disabled style="opacity: 0.5; cursor: not-allowed;">
                             <i class="fa-solid fa-chevron-left"></i>
                         </button>
                         @else
-                        <a href="{{ $users->previousPageUrl() }}" class="page-btn prev">
+                        <a href="{{ $repairs->previousPageUrl() }}" class="page-btn prev">
                             <i class="fa-solid fa-chevron-left"></i>
                         </a>
                         @endif
 
                         {{-- Page Numbers --}}
                         <div class="page-numbers">
-                            @foreach ($users->getUrlRange(1, $users->lastPage()) as $page => $url)
-                            @if ($page == $users->currentPage())
+                            @foreach ($repairs->getUrlRange(1, $repairs->lastPage()) as $page => $url)
+                            @if ($page == $repairs->currentPage())
                             <span class="page-btn active">{{ $page }}</span>
                             @else
                             <a href="{{ $url }}" class="page-btn" style="text-decoration: none;">{{ $page }}</a>
@@ -246,8 +260,8 @@
                         </div>
 
                         {{-- Next Page Button --}}
-                        @if ($users->hasMorePages())
-                        <a href="{{ $users->nextPageUrl() }}" class="page-btn next">
+                        @if ($repairs->hasMorePages())
+                        <a href="{{ $repairs->nextPageUrl() }}" class="page-btn next">
                             <i class="fa-solid fa-chevron-right"></i>
                         </a>
                         @else

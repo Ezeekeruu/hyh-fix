@@ -37,6 +37,11 @@
                     POS
                 </a>
 
+                <a href="{{ url('/repair-management') }}" class="nav-link ">
+                    <i class="fa-solid fa-wrench"></i>
+                    Repair Management
+                </a>
+
                 <a href="{{ url('/transaction-history') }}" class="nav-link">
                     <i class="fa-regular fa-clipboard"></i>
                     Transaction History
@@ -95,26 +100,32 @@
 
             <!-- Date Range + Export -->
             <section class="page-actions">
-                <div class="range-tabs">
-                    <button>Today</button>
-                    <button>This Week</button>
-                    <button class="active">This Month</button>
-                    <button class="custom-date">
-                        <i class="fa-regular fa-calendar"></i>
-                        Custom Date
-                    </button>
+                <div class="range-wrap">
+                    <form method="GET" action="{{ url('/reports') }}" class="range-tabs">
+                        <button type="submit" name="filter" value="today" class="{{ $filter === 'today' ? 'active' : '' }}">Today</button>
+                        <button type="submit" name="filter" value="week" class="{{ $filter === 'week' ? 'active' : '' }}">This Week</button>
+                        <button type="submit" name="filter" value="month" class="{{ $filter === 'month' ? 'active' : '' }}">This Month</button>
+                        <button type="button" id="customDateToggle" class="custom-date {{ $filter === 'custom' ? 'active' : '' }}">
+                            <i class="fa-regular fa-calendar"></i>
+                            Custom Date
+                        </button>
+                    </form>
+
+                    <form method="GET" action="{{ url('/reports') }}" id="customRangeForm"
+                        class="custom-range-form {{ $filter === 'custom' ? 'show' : '' }}">
+                        <input type="hidden" name="filter" value="custom">
+                        <input type="date" name="start_date" value="{{ $startDate->toDateString() }}" required>
+                        <span>to</span>
+                        <input type="date" name="end_date" value="{{ $endDate->toDateString() }}" required>
+                        <button type="submit" class="apply-btn">Apply</button>
+                    </form>
                 </div>
 
                 <div class="export-actions">
-                    <button class="export-btn pdf">
+                    <a href="{{ route('reports.pdf', request()->query()) }}" class="export-btn pdf" style="text-decoration:none;">
                         <span class="export-icon"><i class="fa-regular fa-file-pdf"></i></span>
                         Export PDF
-                    </button>
-
-                    <button class="export-btn excel">
-                        <span class="export-icon"><i class="fa-regular fa-file-excel"></i></span>
-                        Export Excel
-                    </button>
+                    </a>
                 </div>
             </section>
 
@@ -128,7 +139,7 @@
                             <i class="fa-solid fa-cash-register"></i>
                         </div>
                     </div>
-                    <h2 class="stat-value"></h2>
+                    <h2 class="stat-value">₱{{ number_format($totalSales, 2) }}</h2>
                 </div>
 
                 <div class="stat-card">
@@ -138,7 +149,7 @@
                             <i class="fa-regular fa-file-lines"></i>
                         </div>
                     </div>
-                    <h2 class="stat-value"></h2>
+                    <h2 class="stat-value">{{ number_format($totalTransactions) }}</h2>
                 </div>
 
                 <div class="stat-card">
@@ -148,7 +159,8 @@
                             <i class="fa-solid fa-sack-dollar"></i>
                         </div>
                     </div>
-                    <h2 class="stat-value"></h2>
+                    <h2 class="stat-value">₱{{ number_format($netRevenue, 2) }}</h2>
+                    <p class="stat-sub">Profit: ₱{{ number_format($profit, 2) }}</p>
                 </div>
 
                 <div class="stat-card">
@@ -158,7 +170,7 @@
                             <i class="fa-solid fa-screwdriver-wrench"></i>
                         </div>
                     </div>
-                    <h2 class="stat-value"></h2>
+                    <h2 class="stat-value">{{ number_format($repairsCompleted) }}</h2>
                 </div>
             </section>
 
@@ -173,13 +185,9 @@
 
                         <p>Sales comparison of repairs, and accessories over the last 8 weeks.</p>
                     </div>
-
-                    <div class="period-tabs">
-                        <button>Daily</button>
-                        <button class="active">Weekly</button>
-                        <button>Monthly</button>
-                    </div>
                 </div>
+
+
 
                 <div class="chart-legend">
                     <div class="legend-item">
@@ -198,8 +206,8 @@
                     </div>
                 </div>
 
-                <!-- CHART: render with your chart library of choice (Chart.js, ApexCharts, etc.) -->
-                <div class="chart-placeholder" id="salesOverviewChart"></div>
+                <!-- CHART: repairs vs retail revenue, last 8 weeks (Chart.js) -->
+                <div class="chart-placeholder" id="salesOverviewChart" style="position:relative;"><canvas id="salesChart"></canvas></div>
             </section>
 
             <!-- Insight Row -->
@@ -234,11 +242,14 @@
 
                 <div class="panel-card">
                     <div class="panel-header">
-                        <div class="panel-header-title">
-                            <i class="fa-solid fa-cart-shopping"></i>
-                            <h2>Best-Selling Retail Products</h2>
+                        <div>
+                            <div class="panel-header-title">
+                                <i class="fa-solid fa-cart-shopping"></i>
+                                <h2>Best-Selling Retail Products</h2>
+                            </div>
+                            <div class="panel-header-sub">Top retail products based on units sold during the selected period.</div>
                         </div>
-                        <button class="panel-link">Full Catalog <i class="fa-solid fa-arrow-right"></i></button>
+                        <span class="panel-meta">{{ $rangeLabel }}</span>
                     </div>
 
                     <table class="report-table">
@@ -250,18 +261,22 @@
                             </tr>
                         </thead>
                         <tbody>
-                          
-                                <tr>
-                                    <td>
-                                        <div class="product-cell">
-                                            <div class="product-thumb"><i class="fa-solid fa-box"></i></div>
-                                           
-                                        </div>
-                                    </td>
-                                    <td class="num"></td>
-                                    <td class="num"></td>
-                                </tr>
-                      
+                            @forelse ($bestSellingProducts as $product)
+                            <tr>
+                                <td>
+                                    <div class="product-cell">
+                                        <div class="product-thumb"><i class="fa-solid fa-box"></i></div>
+                                        <span class="product-name">{{ $product->product_name }}</span>
+                                    </div>
+                                </td>
+                                <td class="num">{{ number_format($product->qty_sold) }}</td>
+                                <td class="num">₱{{ number_format($product->sales_amount, 2) }}</td>
+                            </tr>
+                            @empty
+                            <tr>
+                                <td colspan="3" class="empty-row">No retail sales in the selected period.</td>
+                            </tr>
+                            @endforelse
                         </tbody>
                     </table>
                 </div>
@@ -273,8 +288,9 @@
                                 <i class="fa-solid fa-triangle-exclamation"></i>
                                 <h2>Slow-Moving & Dead Stock Alert</h2>
                             </div>
-                            <div class="panel-header-sub">Stagnant capital exceeding 30+ shelf days</div>
+                            <div class="panel-header-sub">Products with low or no sales movement during the selected period.</div>
                         </div>
+                        <span class="panel-meta">{{ $rangeLabel }}</span>
                     </div>
 
                     <table class="report-table">
@@ -286,18 +302,31 @@
                             </tr>
                         </thead>
                         <tbody>
-                       
-                                <tr>
-                                    <td>
-                                        <div class="product-cell">
-                                            <div class="product-thumb alert"><i class="fa-solid fa-box"></i></div>
-                                           
+                            @forelse ($slowMovingProducts as $product)
+                            @php $isDead = (int) $product->qty_sold === 0; @endphp
+                            <tr>
+                                <td>
+                                    <div class="product-cell">
+                                        <div class="product-thumb alert"><i class="fa-solid fa-box"></i></div>
+                                        <div>
+                                            <span class="product-name">{{ $product->product_name }}</span>
+                                            <div class="product-sub">
+                                                <span class="status-badge {{ $isDead ? 'dead' : 'slow' }}">
+                                                    {{ $isDead ? 'Dead Stock' : 'Slow Moving' }}
+                                                </span>
+                                                <span>{{ number_format($product->stock_quantity) }} in stock</span>
+                                            </div>
                                         </div>
-                                    </td>
-                                    <td class="num"></td>
-                                    <td class="num"></td>
-                                </tr>
-                         
+                                    </div>
+                                </td>
+                                <td class="num">{{ number_format($product->qty_sold) }}</td>
+                                <td class="num">₱{{ number_format($product->sales_amount, 2) }}</td>
+                            </tr>
+                            @empty
+                            <tr>
+                                <td colspan="3" class="empty-row">No slow-moving or dead stock for the selected period.</td>
+                            </tr>
+                            @endforelse
                         </tbody>
                     </table>
                 </div>
@@ -308,29 +337,36 @@
 
                 <div class="panel-card">
                     <div class="panel-header">
-                        <div class="panel-header-title">
-                            <i class="fa-solid fa-briefcase"></i>
-                            <h2>Most Requested Repair Services</h2>
+                        <div>
+                            <div class="panel-header-title">
+                                <i class="fa-solid fa-briefcase"></i>
+                                <h2>Most Requested Repair Services</h2>
+                            </div>
+                            <div class="panel-header-sub">Most frequently requested repair services during the selected period.</div>
                         </div>
-                        <span class="panel-meta"></span>
+                        <span class="panel-meta">{{ $rangeLabel }}</span>
                     </div>
 
                     <table class="report-table">
                         <thead>
                             <tr>
                                 <th>Service</th>
-                                <th class="num">Completed</th>
+                                <th class="num">Requests</th>
                                 <th class="num">Revenue</th>
                             </tr>
                         </thead>
                         <tbody>
-                            
-                                <tr>
-                                    <td></td>
-                                    <td class="num"></td>
-                                    <td class="num"></td>
-                                </tr>
-                           
+                            @forelse ($topRepairServices as $service)
+                            <tr>
+                                <td>{{ $service->service_type }}</td>
+                                <td class="num">{{ number_format($service->total_requests) }}</td>
+                                <td class="num">₱{{ number_format($service->revenue, 2) }}</td>
+                            </tr>
+                            @empty
+                            <tr>
+                                <td colspan="3" class="empty-row">No repair requests in the selected period.</td>
+                            </tr>
+                            @endforelse
                         </tbody>
                     </table>
                 </div>
@@ -341,37 +377,44 @@
                             <i class="fa-solid fa-box"></i>
                             <h2>Inventory Status</h2>
                         </div>
+                        <span class="panel-meta">{{ number_format($totalProducts) }} total products</span>
                     </div>
 
+                    @php
+                    $pctIn = $totalProducts > 0 ? round($inStock / $totalProducts * 100, 2) : 0;
+                    $pctLow = $totalProducts > 0 ? round($lowStock / $totalProducts * 100, 2) : 0;
+                    $pctOut = $totalProducts > 0 ? round($outOfStock / $totalProducts * 100, 2) : 0;
+                    @endphp
+
                     <div class="stock-progress">
-                        <span class="in-stock"></span>
-                        <span class="low-stock"></span>
-                        <span class="out-stock"></span>
+                        <span class="in-stock" @style(["width: {$pctIn}%"])></span>
+                        <span class="low-stock" @style(["width: {$pctLow}%"])></span>
+                        <span class="out-stock" @style(["width: {$pctOut}%"])></span>
                     </div>
 
                     <div class="stock-summary">
                         <div class="stock-summary-item">
                             <div class="dot-label"><span class="dot green"></span> In Stock</div>
-                            <h3></h3>
+                            <h3>{{ number_format($inStock) }}</h3>
                         </div>
 
                         <div class="stock-summary-item low">
                             <div class="dot-label"><span class="dot blue"></span> Low Stock</div>
-                            <h3></h3>
+                            <h3>{{ number_format($lowStock) }}</h3>
                             <small>Needs reorder</small>
                         </div>
 
                         <div class="stock-summary-item out">
                             <div class="dot-label"><span class="dot red"></span> Out of Stock</div>
-                            <h3></h3>
+                            <h3>{{ number_format($outOfStock) }}</h3>
                             <small>Urgent restock</small>
                         </div>
                     </div>
 
-                    <button class="panel-btn">
+                    <a href="{{ url('/inventory') }}" class="panel-btn">
                         <i class="fa-solid fa-warehouse"></i>
                         Open Inventory Manager
-                    </button>
+                    </a>
                 </div>
             </section>
 
@@ -384,11 +427,7 @@
                     </div>
 
                     <div class="staff-header-right">
-                        <span class="panel-meta"></span>
-                        <button class="filter-chip">
-                            <i class="fa-solid fa-sliders"></i>
-                            Filter
-                        </button>
+                        <span class="panel-meta">{{ $rangeLabel }}</span>
                     </div>
                 </div>
 
@@ -404,20 +443,35 @@
                             </tr>
                         </thead>
                         <tbody>
-                            
-                                <tr>
-                                    <td>
-                                        <div class="staff-name">
-                                            <div class="staff-avatar"></div>
-                                            
-                                        </div>
-                                    </td>
-                                    <td><span class="role-badge"></span></td>
-                                    <td class="num"></td>
-                                    <td class="num"></td>
-                                    <td class="num revenue"></td>
-                                </tr>
-            
+                            @forelse ($staffPerformance as $staff)
+                            @php
+                            $staffName = $staff->name ?? $staff->full_name ?? $staff->username ?? 'Unknown';
+                            $initials = collect(explode(' ', trim($staffName)))
+                            ->filter()->take(2)
+                            ->map(fn ($p) => mb_strtoupper(mb_substr($p, 0, 1)))
+                            ->implode('');
+                            $role = $staff->role ?? '';
+                            $roleClass = stripos($role, 'tech') !== false ? 'tech'
+                            : (stripos($role, 'clerk') !== false ? 'clerk'
+                            : (stripos($role, 'secretary') !== false ? 'secretary' : 'staff-tech'));
+                            @endphp
+                            <tr>
+                                <td>
+                                    <div class="staff-name">
+                                        <div class="staff-avatar">{{ $initials }}</div>
+                                        {{ $staffName }}
+                                    </div>
+                                </td>
+                                <td><span class="role-badge {{ $roleClass }}">{{ $role !== '' ? ucfirst($role) : '—' }}</span></td>
+                                <td class="num">{{ number_format($staff->completed_repairs_count) }}</td>
+                                <td class="num">{{ number_format($staff->completed_sales_count) }}</td>
+                                <td class="num revenue">₱{{ number_format($staff->revenue_generated, 2) }}</td>
+                            </tr>
+                            @empty
+                            <tr>
+                                <td colspan="5" class="empty-row">No staff activity for the selected period.</td>
+                            </tr>
+                            @endforelse
                         </tbody>
                     </table>
                 </div>
@@ -426,5 +480,38 @@
         </main>
     </div>
 
+
+    <script>
+        document.getElementById('customDateToggle').addEventListener('click', function() {
+            document.getElementById('customRangeForm').classList.toggle('show');
+        });
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script>
+        (function () {
+            var el = document.getElementById('salesChart');
+            if (!el || typeof Chart === 'undefined') return;
+            var series = @json($weeklySeries);
+            new Chart(el, {
+                type: 'bar',
+                data: {
+                    labels: series.labels,
+                    datasets: [
+                        { label: 'Repair Services', data: series.repair, backgroundColor: '#1e293b', borderRadius: 6 },
+                        { label: 'Retail & Parts', data: series.retail, backgroundColor: '#60a5fa', borderRadius: 6 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true, ticks: { callback: function (v) { return '₱' + v; } } } }
+                }
+            });
+        })();
+    </script>
+
 </body>
+
 </html>

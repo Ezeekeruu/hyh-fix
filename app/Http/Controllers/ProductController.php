@@ -6,6 +6,7 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Models\Supplier;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
 
@@ -14,10 +15,18 @@ class ProductController extends Controller
     // =========================================================
     // 1. DISPLAY ALL PRODUCTS
     // =========================================================
+    // =========================================================
+    // 1. DISPLAY ALL PRODUCTS WITH PAGINATION
+    // =========================================================
     public function index(Request $request)
     {
         // Fetch all categories for the filter dropdown
         $categories = Category::orderBy('category_name')->get();
+
+        // Global counts for stat cards across all pages
+        $totalProducts = Product::count();
+        $lowStockCount = Product::where('stock_quantity', '>', 0)->where('stock_quantity', '<=', 10)->count();
+        $outOfStockCount = Product::where('stock_quantity', '<=', 0)->count();
 
         // Build query with relationships
         $query = Product::with(['category', 'supplier']);
@@ -46,21 +55,24 @@ class ProductController extends Controller
         if ($request->filled('status')) {
             $status = $request->input('status');
             if ($status === 'in_stock') {
-                $query->where('stock_quantity', '>', 5);
+                $query->where('stock_quantity', '>', 10);
             } elseif ($status === 'low_stock') {
                 $query->where('stock_quantity', '>', 0)
-                    ->where('stock_quantity', '<=', 5);
+                    ->where('stock_quantity', '<=', 10);
             } elseif ($status === 'out_of_stock') {
                 $query->where('stock_quantity', '<=', 0);
             }
         }
 
-        // Get filtered products sorted by latest
-        $products = $query->latest()->get();
+        // Paginate results by 10 items per page and append current URL filters
+        $products = $query->latest()->paginate(10)->withQueryString();
 
         return view('inventory.inventory-index', [
-            'products'   => $products,
-            'categories' => $categories,
+            'products'        => $products,
+            'categories'      => $categories,
+            'totalProducts'   => $totalProducts,
+            'lowStockCount'   => $lowStockCount,
+            'outOfStockCount' => $outOfStockCount,
         ]);
     }
 
@@ -120,6 +132,11 @@ class ProductController extends Controller
             // Stock quantity is required.
             // It must be a whole number and cannot be negative.
             'stock_quantity' => 'required|integer|min:0',
+
+            // Image is optional.
+            // If provided, it must be an actual image file
+            // (jpg, jpeg, png, or webp) and no larger than 2MB.
+            'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
 
 
@@ -161,6 +178,13 @@ class ProductController extends Controller
 
         // Get the starting/current stock quantity.
         $product->stock_quantity = $request->input('stock_quantity');
+
+
+        // If the user uploaded a product image, store it in
+        // storage/app/public/products and remember its path.
+        if ($request->hasFile('image')) {
+            $product->image_path = $request->file('image')->store('products', 'public');
+        }
 
 
         // Save the Product object into the products table.
@@ -213,34 +237,17 @@ class ProductController extends Controller
     // =========================================================
     public function edit($id)
     {
-        // Find the product that we want to edit.
-        //
-        // If the product does not exist, Laravel returns 404.
-        $product = Product::findOrFail($id);
+        // Find the product and load its category and supplier relations
+        $product = Product::with(['category', 'supplier'])->findOrFail($id);
 
-
-        // Get all categories.
-        //
-        // These will be used in the category dropdown
-        // on the edit form.
+        // Get all categories and suppliers for selection dropdowns
         $categories = Category::orderBy('category_name')->get();
+        $suppliers  = Supplier::orderBy('supplier_name')->get();
 
-
-        // Get all suppliers.
-        //
-        // These will be used in the supplier dropdown
-        // on the edit form.
-        $suppliers = Supplier::orderBy('supplier_name')->get();
-
-
-        // Open the edit form.
-        //
-        // Send the product, categories, and suppliers
-        // to the Blade view.
-        return view('products.edit', [
-            'product' => $product,
+        return view('inventory.edit', [
+            'product'    => $product,
             'categories' => $categories,
-            'suppliers' => $suppliers,
+            'suppliers'  => $suppliers,
         ]);
     }
 
@@ -298,6 +305,10 @@ class ProductController extends Controller
 
             // Stock quantity must be a whole number and cannot be negative.
             'stock_quantity' => 'required|integer|min:0',
+
+            // Image is optional on update — the product keeps its
+            // current image if no new file is uploaded.
+            'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
 
 
@@ -329,6 +340,17 @@ class ProductController extends Controller
         $product->stock_quantity = $request->input('stock_quantity');
 
 
+        // If the user uploaded a new image, delete the old one
+        // (if it exists) and store the new one instead.
+        if ($request->hasFile('image')) {
+            if ($product->image_path) {
+                Storage::disk('public')->delete($product->image_path);
+            }
+
+            $product->image_path = $request->file('image')->store('products', 'public');
+        }
+
+
         // Save all the changes to the database.
         $product->save();
 
@@ -351,6 +373,12 @@ class ProductController extends Controller
         //
         // If the product does not exist, Laravel returns 404.
         $product = Product::findOrFail($id);
+
+
+        // Remove the product's image file from storage, if it has one.
+        if ($product->image_path) {
+            Storage::disk('public')->delete($product->image_path);
+        }
 
 
         // Delete the product from the products table.

@@ -20,6 +20,7 @@ return new class extends Migration
             $table->decimal('cost_price', 10, 2);
             $table->decimal('sell_price', 10, 2);
             $table->unsignedInteger('stock_quantity')->default(0);
+            $table->string('image_path')->nullable();
             $table->timestamps();
         });
     }

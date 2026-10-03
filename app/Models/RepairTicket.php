@@ -10,6 +10,7 @@ class RepairTicket extends Model
     protected $fillable = [
         'device_id',
         'assigned_to',
+        'service_type',
         'problem_description',
         'quotation_price',
         'final_price',
@@ -50,4 +51,3 @@ class RepairTicket extends Model
         return $this->hasOne(Receipt::class);
     }
 }
-

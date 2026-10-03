@@ -37,6 +37,11 @@
                     POS
                 </a>
 
+                <a href="{{ url('/repair-management') }}" class="nav-link ">
+                    <i class="fa-solid fa-wrench"></i>
+                    Repair Management
+                </a>
+
                 <a href="{{ url('/transaction-history') }}" class="nav-link active">
                     <i class="fa-regular fa-clipboard"></i>
                     Transaction History
@@ -96,46 +101,79 @@
 
             <!-- Search and Filter Section -->
             <section class="filter-section">
-                <div class="filter-row">
-                    <div class="search-box">
-                        <i class="fa-solid fa-magnifying-glass"></i>
-                        <input type="text" placeholder="Search by Transaction ID (#TX-), customer, phone, IMEI...">
-                    </div>
+                <div class="inventory-actions-bar">
 
-                    <div class="filter-dropdown date-picker">
-                        <i class="fa-regular fa-calendar"></i>
-                        <select>
-                            <option></option>
-                        </select>
-                    </div>
+                    <!-- Combined Filter Form -->
+                    <form action="{{ url('/transaction-history') }}" method="GET" style="display: flex; gap: 8px; align-items: center; width: 100%; flex-wrap: wrap;">
 
-                    <div class="filter-dropdown">
-                        <select>
-                            <option>All Payment Methods</option>
-                        </select>
-                    </div>
+                        <!-- 1. Search Box -->
+                        <div class="search-box" style="flex: 1 1 240px; min-width: 200px;">
+                            <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                            <input type="text" name="search" value="{{ request('search') }}" placeholder="Search by ID, SKU, customer, phone...">
+                            <button type="submit" class="search-btn">
+                                Search
+                            </button>
+                        </div>
 
-                    <div class="filter-dropdown">
-                        <select>
-                            <option>All Statuses</option>
-                        </select>
-                    </div>
-                </div>
+                        <!-- 2. Date Dropdown & Custom Range Inputs -->
+                        <div class="filter-dropdown" style="display: flex; gap: 6px; align-items: center;">
+                            <select name="date" id="dateFilterSelect" onchange="toggleCustomDateInputs(this.value)">
+                                <option value="all" {{ request('date') == 'all' || !request('date') ? 'selected' : '' }}>All Dates</option>
+                                <option value="today" {{ request('date') == 'today' ? 'selected' : '' }}>Today</option>
+                                <option value="this_week" {{ request('date') == 'this_week' ? 'selected' : '' }}>This Week</option>
+                                <option value="this_month" {{ request('date') == 'this_month' ? 'selected' : '' }}>This Month</option>
+                                <option value="custom" {{ request('date') == 'custom' ? 'selected' : '' }}>Custom Range</option>
+                            </select>
 
-                <div class="active-filters">
-                    <span class="filter-label">Showing:</span>
-                    <div class="filter-pill">
-                        Period: <span></span>
-                        <button class="remove-pill" type="button"><i class="fa-solid fa-xmark"></i></button>
-                    </div>
-                    <button class="clear-all-btn" type="button">Clear All Filters</button>
+                            <!-- Custom Date Inputs -->
+                            <div id="customDateInputs"
+                                @if(request('date') != 'custom') style="display: none;" @endif>
+                                <input type="date" name="start_date" value="{{ request('start_date') }}" style="padding: 6px 8px; border: 1px solid #ccc; border-radius: 6px; font-size: 13px;">
+                                <span style="font-weight: 500; font-size: 13px; color: #666;">to</span>
+                                <input type="date" name="end_date" value="{{ request('end_date') }}" style="padding: 6px 8px; border: 1px solid #ccc; border-radius: 6px; font-size: 13px;">
+                                <button type="submit" class="search-btn" style="padding: 6px 10px; font-size: 13px;">Apply</button>
+                            </div>
+                        </div>
+
+                        <!-- 3. Payment Method Dropdown (Shorter Width & Text) -->
+                        <div class="filter-dropdown" style="max-width: 140px;">
+                            <select name="payment_method" onchange="this.form.submit()">
+                                <option value="all" {{ request('payment_method') == 'all' || !request('payment_method') ? 'selected' : '' }}>All Methods</option>
+                                <option value="cash" {{ request('payment_method') == 'cash' ? 'selected' : '' }}>Cash</option>
+                                <option value="gcash" {{ request('payment_method') == 'gcash' ? 'selected' : '' }}>GCash</option>
+                            </select>
+                        </div>
+
+                        <!-- 4. Status Dropdown (Shorter Width & Text) -->
+                        <div class="filter-dropdown" style="max-width: 130px;">
+                            <select name="status" onchange="this.form.submit()">
+                                <option value="all" {{ request('status') == 'all' || !request('status') ? 'selected' : '' }}>All Statuses</option>
+                                <option value="completed" {{ request('status') == 'completed' ? 'selected' : '' }}>Completed</option>
+                                <option value="voided" {{ request('status') == 'voided' ? 'selected' : '' }}>Voided</option>
+                                <option value="cancelled" {{ request('status') == 'cancelled' ? 'selected' : '' }}>Cancelled</option>
+                                <option value="refunded" {{ request('status') == 'refunded' ? 'selected' : '' }}>Refunded</option>
+                            </select>
+                        </div>
+
+                        <!-- 5. Clear Filters Button -->
+                        <a href="{{ url('/transaction-history') }}" class="btn-filter-icon" title="Clear filters">
+                            <i class="fa-solid fa-filter-circle-xmark"></i>
+                        </a>
+
+                    </form>
+
                 </div>
             </section>
 
             <!-- Recent Logs Table Card -->
             <section class="logs-card">
                 <div class="logs-header">
-                    <h3>Recent Logs <span class="badge-count"></span></h3>
+                    <h3>
+                        Recent Logs
+                        <span class="badge-count">
+                            {{ $sales->total() }}
+                        </span>
+                    </h3>
                 </div>
 
                 <div class="table-wrapper">
@@ -143,6 +181,7 @@
                         <thead>
                             <tr>
                                 <th>TRANSACTION ID</th>
+                                <th>SKU</th>
                                 <th>CUSTOMER</th>
                                 <th>ITEM/SERVICE</th>
                                 <th>AMOUNT</th>
@@ -153,35 +192,101 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <!-- Data Row Template -->
+
+                            @forelse($sales as $sale)
+
                             <tr>
-                                <td class="tx-id"></td>
-                                <td class="customer-name"></td>
-                                <td class="item-service">
-                                    <div class="item-title"></div>
-                                    <div class="item-sub"></div>
+
+                                <td class="tx-id">
+                                    #{{ $sale->id }}
                                 </td>
-                                <td class="amount"></td>
+
+                                <td class="sku">
+
+                                    @php
+                                    $firstItem = $sale->saleItems->first();
+                                    @endphp
+
+                                    <div class="sku-title">
+                                        {{ $firstItem?->product?->sku ?? 'N/A' }}
+                                    </div>
+
+                                    @if($sale->saleItems->count() > 1)
+
+                                    <div class="sku-sub">
+                                        +{{ $sale->saleItems->count() - 1 }} others
+                                    </div>
+
+                                    @endif
+
+                                </td>
+
+                                <td class="customer-name">
+                                    {{ $sale->customer->name ?? 'Walk-in Customer' }}
+                                </td>
+
+                                <td class="item-service">
+
+                                    @php
+                                    $firstItem = $sale->saleItems->first();
+                                    @endphp
+
+                                    <div class="item-title">
+                                        {{ $firstItem?->product?->product_name ?? 'N/A' }}
+                                    </div>
+
+                                    <div class="item-sub">
+                                        {{ $sale->saleItems->count() }} item(s)
+                                    </div>
+
+                                </td>
+
+                                <td class="amount">
+                                    ₱{{ number_format($sale->total_amount, 2) }}
+                                </td>
+
                                 <td class="payment-method">
-                                    <span class="payment-tag">
-                                        <i class="fa-regular fa-credit-card"></i>
-                                        <span></span>
+                                    {{ ucfirst($sale->payment_method) }}
+                                </td>
+
+                                <td class="date-time">
+                                    <div class="date">
+                                        {{ $sale->sale_date->format('M d, Y') }}
+                                    </div>
+
+                                    <div class="time">
+                                        {{ $sale->sale_date->format('h:i A') }}
+                                    </div>
+                                </td>
+
+                                <td>
+                                    <span class="status-badge">
+                                        {{ ucfirst($sale->status) }}
                                     </span>
                                 </td>
-                                <td class="date-time">
-                                    <div class="date"></div>
-                                    <div class="time"></div>
-                                </td>
+
                                 <td>
-                                    <span class="status-badge"></span>
-                                </td>
-                                <td>
-                                    <button class="btn-action" type="button">
-                                        <i class="fa-regular fa-file-lines"></i>
+
+                                    <a
+                                        href="{{ route('sales.show', $sale->id) }}"
+                                        class="btn-action">
                                         View Receipt
-                                    </button>
+                                    </a>
+
+                                </td>
+
+                            </tr>
+
+                            @empty
+
+                            <tr>
+                                <td colspan="8" style="text-align:center;">
+                                    No transactions found.
                                 </td>
                             </tr>
+
+                            @endforelse
+
                         </tbody>
                     </table>
                 </div>
@@ -189,20 +294,92 @@
                 <!-- Footer Pagination -->
                 <div class="table-footer">
                     <div class="pagination-info">
-                        Showing <span></span> to <span></span> of <span></span> entries
+                        Showing
+                        <span>{{ $sales->firstItem() ?? 0 }}</span>
+                        to
+                        <span>{{ $sales->lastItem() ?? 0 }}</span>
+                        of
+                        <span>{{ $sales->total() }}</span>
+                        entries
                     </div>
 
                     <div class="pagination">
-                        <button class="page-btn prev" type="button"><i class="fa-solid fa-chevron-left"></i></button>
+
+                        {{-- Previous Button --}}
+                        @if($sales->onFirstPage())
+
+                        <button
+                            class="page-btn prev disabled"
+                            type="button"
+                            disabled>
+                            <i class="fa-solid fa-chevron-left"></i>
+                        </button>
+
+                        @else
+
+                        <a
+                            href="{{ $sales->previousPageUrl() }}"
+                            class="page-btn prev">
+                            <i class="fa-solid fa-chevron-left"></i>
+                        </a>
+
+                        @endif
+
+                        {{-- Page Numbers --}}
                         <div class="page-numbers">
-                            <!-- Add dynamic page buttons here -->
+
+                            @for($i = 1; $i <= $sales->lastPage(); $i++)
+
+                                <a
+                                    href="{{ $sales->url($i) }}"
+                                    class="page-btn page-number {{ $sales->currentPage() == $i ? 'active' : '' }}">
+                                    {{ $i }}
+                                </a>
+
+                                @endfor
+
                         </div>
-                        <button class="page-btn next" type="button"><i class="fa-solid fa-chevron-right"></i></button>
+
+                        {{-- Next Button --}}
+                        @if($sales->hasMorePages())
+
+                        <a
+                            href="{{ $sales->nextPageUrl() }}"
+                            class="page-btn next">
+                            <i class="fa-solid fa-chevron-right"></i>
+                        </a>
+
+                        @else
+
+                        <button
+                            class="page-btn next disabled"
+                            type="button"
+                            disabled>
+                            <i class="fa-solid fa-chevron-right"></i>
+                        </button>
+
+                        @endif
+
                     </div>
                 </div>
             </section>
         </main>
     </div>
+
+    <script>
+        function toggleCustomDateInputs(value) {
+            const customContainer = document.getElementById('customDateInputs');
+
+            if (value === 'custom') {
+                customContainer.style.display = 'flex';
+            } else {
+                customContainer.style.display = 'none';
+                // Automatically submit form for preset options
+                document.getElementById('dateFilterSelect').form.submit();
+            }
+        }
+    </script>
+
 </body>
 
 </html>

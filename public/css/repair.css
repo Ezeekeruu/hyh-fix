@@ -27,24 +27,38 @@ body {
     --border-color: #e5e7eb;
     --card-bg: #ffffff;
 
-    /* Status Colors */
-    --status-progress-bg: #dbeafe;
-    --status-progress-text: #1d4ed8;
+    /* Service Type Badges */
+    --badge-repair-bg: #e0e7ff;
+    --badge-repair-text: #3730a3;
+    --badge-part-bg: #e0f2fe;
+    --badge-part-text: #0369a1;
+
+    /* Repair Status Badges */
+    --status-pending-bg: #fef3c7;
+    --status-pending-text: #b45309;
+
+    --status-progress-bg: #e0f2fe;
+    --status-progress-text: #0369a1;
+
     --status-completed-bg: #dcfce7;
     --status-completed-text: #15803d;
-    --status-refunded-bg: #fee2e2;
-    --status-refunded-text: #b91c1c;
+
+    --status-delivered-bg: #f3e8ff;
+    --status-delivered-text: #6b21a8;
+
+    --status-cancelled-bg: #fee2e2;
+    --status-cancelled-text: #b91c1c;
 
     --shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
-/* MAIN LAYOUT */
+/* LAYOUT STRUCTURE */
 .dashboard {
     display: flex;
     min-height: 100vh;
 }
 
-/* SIDEBAR */
+/* SIDEBAR NAVIGATION */
 .sidebar {
     width: 280px;
     background: linear-gradient(180deg, var(--sidebar-bg-top), var(--sidebar-bg-bottom));
@@ -204,12 +218,11 @@ body {
     color: var(--text-muted);
 }
 
-/* FILTERS SECTION */
-.filter-section {
+/* CARD & ACTION BAR */
+.inventory-card {
     background: #fff;
     border-radius: 16px;
-    padding: 16px 20px;
-    margin-bottom: 24px;
+    padding: 20px;
     box-shadow: var(--shadow);
 }
 
@@ -217,6 +230,7 @@ body {
     display: flex;
     gap: 12px;
     align-items: center;
+    margin-bottom: 20px;
 }
 
 .search-box {
@@ -272,7 +286,7 @@ body {
 }
 
 .filter-dropdown.small-select {
-    flex: 1;
+    flex: 1.2;
 }
 
 .filter-dropdown select {
@@ -303,38 +317,29 @@ body {
     text-decoration: none;
 }
 
-/* RECENT LOGS / TABLE CARD */
-.logs-card {
-    background: #fff;
-    border-radius: 16px;
-    padding: 20px;
-    box-shadow: var(--shadow);
-}
-
-.logs-header {
+.btn-add-product {
+    border: none;
+    background: var(--primary);
+    color: #fff;
+    height: 40px;
+    padding: 0 18px;
+    border-radius: 10px;
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
     display: flex;
     align-items: center;
-    margin-bottom: 16px;
+    gap: 8px;
+    white-space: nowrap;
+    transition: background 0.2s;
 }
 
-.logs-header h3 {
-    font-size: 16px;
-    font-weight: 700;
-    color: var(--text-main);
-    display: flex;
-    align-items: center;
-    gap: 10px;
+.btn-add-product:hover {
+    background: var(--primary-hover);
 }
 
-.badge-count {
-    background: #e0e7ff;
-    color: var(--primary);
-    font-size: 11px;
-    font-weight: 700;
-    padding: 2px 8px;
-    border-radius: 12px;
-}
-
+/* TABLE STYLING */
 .table-wrapper {
     overflow-x: auto;
 }
@@ -347,10 +352,6 @@ table {
 
 thead {
     background: #f8fafc;
-    text-align: center;
-}
-
-tbody {
     text-align: center;
 }
 
@@ -369,80 +370,82 @@ td {
     font-size: 13px;
     border-bottom: 1px solid #f1f5f9;
     vertical-align: middle;
+    text-align: center;
 }
 
-.tx-id {
+/* REPAIR TICKET CUSTOM CELLS */
+.user-id-cell {
     font-weight: 700;
-    color: var(--text-main);
+    color: var(--primary);
+    background: #f8fafc;
 }
 
-.sku-title {
-    font-weight: 600;
-    color: #111827;
+.user-details {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
-.sku-sub {
-    font-size: 12px;
-    color: #6b7280;
-    margin-top: 2px;
-}
-
-.customer-name {
-    font-weight: 500;
-    color: #334155;
-}
-
-.item-service .item-title {
+.user-name {
     font-weight: 600;
     color: var(--text-main);
 }
 
-.item-service .item-sub {
+.user-email {
     font-size: 11px;
     color: var(--text-muted);
 }
 
-.amount {
-    font-weight: 700;
-    color: var(--text-main);
+/* SERVICE BADGE */
+.category-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    background: var(--badge-repair-bg);
+    color: var(--badge-repair-text);
 }
 
-.amount.refunded {
-    color: #dc2626;
-}
-
-.payment-tag {
+/* TECHNICIAN BADGE */
+.role-badge.technician {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    font-size: 12px;
-    color: #475569;
-    border: 1px solid var(--border-color);
-    padding: 3px 8px;
-    border-radius: 6px;
-}
-
-.date-time .date {
-    font-weight: 500;
-    color: #334155;
-}
-
-.date-time .time {
+    padding: 4px 10px;
+    border-radius: 12px;
     font-size: 11px;
-    color: var(--text-muted);
+    font-weight: 600;
+    background: #e0f2fe;
+    color: #0369a1;
 }
 
-/* Status Badges */
+/* STATUS BADGES & DOTS */
 .status-badge {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
     padding: 4px 12px;
     border-radius: 20px;
     font-size: 11px;
     font-weight: 600;
-    text-align: center;
 }
 
-.status-badge.in-progress {
+.status-badge .status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+/* Repair Status Classes */
+.status-badge.pending {
+    background: var(--status-pending-bg);
+    color: var(--status-pending-text);
+}
+
+.status-badge.in-progress,
+.status-badge.in_progress {
     background: var(--status-progress-bg);
     color: var(--status-progress-text);
 }
@@ -452,28 +455,44 @@ td {
     color: var(--status-completed-text);
 }
 
-.status-badge.refunded {
-    background: var(--status-refunded-bg);
-    color: var(--status-refunded-text);
+.status-badge.delivered {
+    background: var(--status-delivered-bg);
+    color: var(--status-delivered-text);
 }
 
-/* Action Button */
-.btn-action {
-    display: inline-flex;
+.status-badge.cancelled {
+    background: var(--status-cancelled-bg);
+    color: var(--status-cancelled-text);
+}
+
+.joined-cell {
+    color: var(--text-muted);
+}
+
+/* ACTION BUTTONS */
+.action-buttons {
+    display: flex;
     align-items: center;
-    justify-content: center;
-    padding: 8px 14px;
-    border-radius: 8px;
-    background: #2563eb;
-    color: #fff;
-    text-decoration: none;
-    font-size: 13px;
-    font-weight: 600;
-    transition: .2s;
+    gap: 8px;
 }
 
-.btn-action:hover {
-    background: #1d4ed8;
+.btn-icon {
+    border: none;
+    background: transparent;
+    color: #64748b;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 4px;
+    transition: color 0.2s;
+    text-decoration: none;
+}
+
+.btn-icon:hover {
+    color: var(--primary);
+}
+
+.btn-icon.danger:hover {
+    color: #ef4444;
 }
 
 /* TABLE FOOTER / PAGINATION */
@@ -483,26 +502,6 @@ td {
     justify-content: space-between;
     margin-top: 18px;
     padding-top: 10px;
-}
-
-.pagination-container {
-    display: flex;
-    justify-content: center;
-    margin-top: 20px;
-}
-
-.pagination-container nav {
-    display: flex;
-    align-items: center;
-}
-
-.pagination-container svg {
-    width: 16px;
-    height: 16px;
-}
-
-.pagination-container .relative {
-    margin: 0 3px;
 }
 
 .pagination-info {
@@ -526,213 +525,48 @@ td {
     gap: 4px;
 }
 
-/* Pagination Links */
-.pagination a {
-    text-decoration: none;
-}
-
-/* Page Numbers */
 .page-btn {
+    border: 1px solid var(--border-color);
+    background: #fff;
+    min-width: 32px;
+    height: 32px;
+    padding: 0 6px;
+    border-radius: 6px;
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    color: #334155;
+    cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    min-width: 40px;
-    height: 40px;
-    border: 1px solid #d1d5db;
-    border-radius: 8px;
-    background: #fff;
-    color: #374151;
-    text-decoration: none;
-    cursor: pointer;
-    transition: all .2s ease;
-}
-
-.page-btn:hover:not(.disabled) {
-    background: #f3f4f6;
 }
 
 .page-btn.active {
-    background: #2563eb;
+    background: var(--primary);
+    border-color: var(--primary);
     color: #fff;
-    border-color: #2563eb;
 }
 
 .page-btn:hover:not(.active) {
     background: #f8fafc;
 }
 
-
-/* Disabled Previous/Next */
-.page-btn:disabled,
-.page-btn.disabled {
-    opacity: .5;
-    cursor: not-allowed;
-    pointer-events: none;
-}
-
-/* ==========================
-   RECEIPT PAGE
-========================== */
-
-.receipt-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 24px;
-}
-
-.btn-back-receipt,
-.btn-print {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    border: none;
-    text-decoration: none;
-    cursor: pointer;
-    font-family: 'Inter', sans-serif;
-    font-weight: 600;
-    padding: 10px 18px;
-    border-radius: 10px;
-}
-
-.btn-back-receipt {
-    background: #ffffff;
-    color: #111827;
-    border: 1px solid #e5e7eb;
-}
-
-.btn-print {
-    background: #2563eb;
-    color: white;
-}
-
-.receipt-paper {
-    width: 800px;
-    max-width: 100%;
-    margin: 0 auto;
-    background: #fff;
-    border-radius: 16px;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, .08);
-    padding: 40px;
-}
-
-.receipt-brand {
-    text-align: center;
-}
-
-.receipt-brand h2 {
-    font-size: 28px;
-    font-weight: 800;
-}
-
-.receipt-brand p {
-    color: #6b7280;
-    margin-top: 4px;
-}
-
-.receipt-divider {
-    border-top: 1px dashed #d1d5db;
-    margin: 24px 0;
-}
-
-.receipt-meta {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 16px;
-}
-
-.receipt-meta div {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-.receipt-meta strong {
-    font-size: 12px;
-    color: #6b7280;
-}
-
-.receipt-product-name {
-    font-weight: 600;
-    color: #111827;
-}
-
-.receipt-product-sku {
-    font-size: 12px;
-    color: #6b7280;
-    margin-top: 2px;
-}
-
-.receipt-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-.receipt-table th {
-    background: #f8fafc;
-}
-
-.receipt-table th,
-.receipt-table td {
-    padding: 12px;
-    text-align: left;
-}
-
-.receipt-total {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.receipt-total h2 {
-    color: #2563eb;
-    font-size: 28px;
-}
-
-.receipt-footer {
-    text-align: center;
-    margin-top: 24px;
-    color: #6b7280;
-    font-size: 13px;
-}
-
-@media print {
-
-    .sidebar,
-    .receipt-header {
-        display: none;
-    }
-
-    .main-content {
-        margin-left: 0;
-        padding: 0;
-    }
-
-    .receipt-paper {
-        width: 100%;
-        box-shadow: none;
-        border-radius: 0;
-    }
-}
-
 /* RESPONSIVE LAYOUT */
-@media (max-width: 1024px) {
-    .inventory-actions-bar {
-        flex-wrap: wrap;
-    }
-
-    .search-box {
-        width: 100%;
-        flex: none;
-    }
-}
-
-@media (max-width: 850px) {
+@media (max-width: 900px) {
     .sidebar {
         display: none;
     }
 
     .main-content {
         margin-left: 0;
+    }
+
+    .inventory-actions-bar {
+        flex-wrap: wrap;
+    }
+
+    .search-box {
+        flex: 100%;
     }
 }

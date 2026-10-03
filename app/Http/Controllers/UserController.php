@@ -28,7 +28,7 @@ class UserController extends Controller
     //
     public function index(Request $request)
     {
-        $query = User::latest();
+        $query = User::orderBy('id', 'asc');
 
         // 1. Search by ID, Name, or Email
         if ($request->filled('search')) {
@@ -50,8 +50,8 @@ class UserController extends Controller
         if ($request->filled('status') && $request->status !== 'all') {
             $query->where('status', $request->status);
         }
-
-        $users = $query->get();
+        
+        $users = $query->paginate(10)->withQueryString();
 
         return view('users.users-index', [
             'users' => $users
@@ -131,16 +131,15 @@ class UserController extends Controller
     }
 
 
-
     public function edit($id)
     {
         $user = User::findOrFail($id);
 
+        // Uses edit.blade.php from resources/views/users/edit.blade.php
         return view('users.edit', [
             'user' => $user
         ]);
     }
-
 
 
     public function update(Request $request, $id)
@@ -159,14 +158,25 @@ class UserController extends Controller
 
             'password' => 'nullable|string|min:8|confirmed',
 
-            'role' => 'required|in:admin,staff',
+            // Accept both select options and underlying DB roles
+            'role' => 'required|in:manager,secretary,sales-clerk,technician,admin,staff',
 
-            'status' => 'required|in:active,inactive',
+            // Accept active, disabled, and inactive
+            'status' => 'required|in:active,disabled,inactive',
         ]);
 
-        $user->name = $request->input('name');
-        $user->email = $request->input('email');
-        $user->role = $request->input('role');
+        $roleInput = $request->input('role');
+        if ($roleInput === 'manager') {
+            $dbRole = 'admin';
+        } elseif (in_array($roleInput, ['secretary', 'sales-clerk', 'technician'])) {
+            $dbRole = 'staff';
+        } else {
+            $dbRole = $roleInput; // Preserves admin or staff if already set
+        }
+
+        $user->name   = $request->input('name');
+        $user->email  = $request->input('email');
+        $user->role   = $dbRole;
         $user->status = $request->input('status');
 
         if ($request->filled('password')) {
@@ -175,11 +185,9 @@ class UserController extends Controller
 
         $user->save();
 
-        return redirect()
-            ->route('users-management')
+        return redirect('/user-management')
             ->with('success', 'User updated successfully.');
     }
-
 
 
     public function destroy($id)
@@ -188,9 +196,7 @@ class UserController extends Controller
 
         $user->delete();
 
-
-        return redirect()
-            ->route('users.index')
+        return redirect('/user-management')
             ->with('success', 'User deleted successfully.');
     }
 }
