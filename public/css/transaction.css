@@ -159,8 +159,7 @@ body {
     letter-spacing: 0.2px;
 }
 
-.menu-btn,
-.notification-btn {
+.menu-btn {
     border: none;
     background: none;
     cursor: pointer;

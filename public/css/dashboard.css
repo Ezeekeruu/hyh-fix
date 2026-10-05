@@ -148,8 +148,7 @@ body {
     font-weight: 700;
 }
 
-.menu-btn,
-.notification-btn {
+.menu-btn {
     border: none;
     background: none;
     cursor: pointer;
@@ -600,12 +599,13 @@ body {
     gap: 12px;
     align-items: center;
     justify-content: flex-end;
+    flex-wrap: wrap;
 }
 
 .search-box {
-    flex: 3.8;            
-    min-width: 400px;     
-    max-width: 480px;     
+    flex: 3.8;
+    min-width: 0;
+    max-width: 480px;
     background: #f3f4f6;
     border-radius: 10px;
     display: flex;
@@ -620,6 +620,7 @@ body {
 
 .search-box input {
     width: 100%;
+    min-width: 0;
     border: none;
     background: transparent;
     outline: none;
@@ -961,4 +962,17 @@ td {
     .stats-grid {
         gap: 12px;
     }
+}
+/* Clickable stat cards */
+.stat-card.stat-link {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.stat-card.stat-link:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(2, 6, 23, 0.1);
 }

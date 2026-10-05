@@ -18,13 +18,14 @@
 </head>
 <body>
     <h1>HYH Fix — Business Report</h1>
-    <p class="meta">Period: {{ $rangeLabel }} &nbsp;|&nbsp; Generated: {{ now()->format('M d, Y h:i A') }}</p>
+    <p class="meta">Period: {{ $rangeLabel }} &nbsp;|&nbsp; Generated: {{ now()->format('M d, Y h:i A') }} &nbsp;|&nbsp; Exported by: {{ $generatedBy ?? 'System' }}</p>
 
     <table class="cards">
         <tr>
             <td><small>Total Sales</small><br><strong>P{{ number_format($totalSales, 2) }}</strong></td>
             <td><small>Total Transactions</small><br><strong>{{ number_format($totalTransactions) }}</strong></td>
-            <td><small>Net Revenue</small><br><strong>P{{ number_format($netRevenue, 2) }}</strong><br><small>Profit: P{{ number_format($profit, 2) }}</small></td>
+            <td><small>Net Revenue</small><br><strong>P{{ number_format($netRevenue, 2) }}</strong></td>
+            <td><small>Profit</small><br><strong>P{{ number_format($profit, 2) }}</strong></td>
             <td><small>Repairs Completed</small><br><strong>{{ number_format($repairsCompleted) }}</strong></td>
         </tr>
     </table>

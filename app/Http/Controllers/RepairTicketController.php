@@ -129,20 +129,22 @@ class RepairTicketController extends Controller
         DB::transaction(function () use ($request) {
 
             // 1. Find or create Customer
+            // address is optional on the form but NOT NULL in the schema.
             $customer = Customer::firstOrCreate(
                 ['phone' => $request->input('phone_number')],
                 [
                     'name'    => $request->input('customer_name'),
-                    'address' => $request->input('address'),
+                    'address' => $request->input('address') ?? '',
                 ]
             );
 
             // 2. Register Device connected to Customer
+            // serial_or_imei is optional on the form but NOT NULL in the schema.
             $device = new Device();
             $device->customer_id    = $customer->id;
             $device->brand          = $request->input('brand');
             $device->model          = $request->input('model');
-            $device->serial_or_imei = $request->input('serial_or_imei');
+            $device->serial_or_imei = $request->input('serial_or_imei') ?? '';
             $device->save();
 
             // 3. Create Repair Ticket
@@ -226,7 +228,7 @@ class RepairTicketController extends Controller
 
         // Send the repair ticket and its related information
         // to the show Blade view.
-        return view('repair_tickets.show', [
+        return view('repair.show-ticket', [
             'repairTicket' => $repairTicket
         ]);
     }
@@ -261,7 +263,7 @@ class RepairTicketController extends Controller
         //
         // Send the repair ticket, devices,
         // and staff users to the view.
-        return view('repair_tickets.edit', [
+        return view('repair.edit-ticket', [
             'repairTicket' => $repairTicket,
             'devices'      => $devices,
             'users'        => $users
@@ -483,19 +485,4 @@ class RepairTicketController extends Controller
             );
     }
 
-    public function storeServiceType(Request $request)
-    {
-        $request->validate([
-            'name' => 'required|string|max:100|unique:service_types,name',
-        ]);
-
-        ServiceType::create([
-            'name' => $request->name,
-        ]);
-
-        return back()->with(
-            'success',
-            'Service type added successfully.'
-        );
-    }
 }

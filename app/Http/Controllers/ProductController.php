@@ -226,7 +226,7 @@ class ProductController extends Controller
 
 
         // Send the product to the show Blade view.
-        return view('products.show', [
+        return view('inventory.show', [
             'product' => $product
         ]);
     }

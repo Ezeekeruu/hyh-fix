@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HYH FIX Dashboard</title>
+    <title>HYH FIX Staff Dashboard</title>
 
     <!-- Inter Font -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -29,7 +29,7 @@
 
             <nav class="sidebar-nav">
                 <p class="nav-group-label">MAIN</p>
-                <a href="{{ auth()->check() && auth()->user()->isStaff() ? url('/staff/dashboard') : url('/dashboard') }}" class="nav-link active">
+                <a href="{{ url('/staff/dashboard') }}" class="nav-link active">
                     <i class="fa-solid fa-table-cells-large"></i>
                     Dashboard
                 </a>
@@ -312,7 +312,7 @@
                     </div>
 
                     <!-- Filters -->
-                    <form action="{{ url('/dashboard') }}#transactions" method="GET" class="filters">
+                    <form action="{{ url('/staff/dashboard') }}#transactions" method="GET" class="filters">
                         <div class="search-box">
                             <i class="fa-solid fa-magnifying-glass"></i>
                             <input type="text" name="search" value="{{ request('search') }}"
@@ -336,7 +336,7 @@
                             </select>
                         </div>
 
-                        <a href="{{ url('/dashboard') }}#transactions" class="btn-filter-icon" title="Clear filters">
+                        <a href="{{ url('/staff/dashboard') }}#transactions" class="btn-filter-icon" title="Clear filters">
                             <i class="fa-solid fa-filter-circle-xmark"></i>
                         </a>
                     </form>

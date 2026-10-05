@@ -1,0 +1,124 @@
+/* HYH FIX — Login (simple POS sign-in, no registration) */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background: #eef2f7;
+    color: #0f172a;
+    min-height: 100vh;
+}
+
+.login-page {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+}
+
+.login-card {
+    width: 100%;
+    max-width: 400px;
+    background: #fff;
+    border-radius: 16px;
+    padding: 36px 32px;
+    box-shadow: 0 18px 45px rgba(7, 26, 55, 0.14);
+}
+
+.login-brand {
+    text-align: center;
+    margin-bottom: 24px;
+}
+
+.login-brand h1 {
+    font-size: 30px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    color: #071a37;
+}
+
+.login-brand h1 span {
+    color: #2563eb;
+}
+
+.login-brand p {
+    font-size: 12px;
+    color: #64748b;
+    margin-top: 4px;
+}
+
+.login-card h2 {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.login-sub {
+    font-size: 13px;
+    color: #64748b;
+    margin-bottom: 20px;
+}
+
+.login-error {
+    background: #fee2e2;
+    border: 1px solid #fca5a5;
+    color: #991b1b;
+    font-size: 13px;
+    font-weight: 500;
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-bottom: 16px;
+}
+
+.login-card label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    margin: 14px 0 6px;
+}
+
+.login-card input[type="email"],
+.login-card input[type="password"] {
+    width: 100%;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 11px 12px;
+    font-size: 14px;
+    font-family: inherit;
+    background: #f8fafc;
+}
+
+.login-card input:focus {
+    outline: 2px solid #2563eb;
+    outline-offset: 0;
+    background: #fff;
+}
+
+.login-btn {
+    width: 100%;
+    margin-top: 22px;
+    border: none;
+    border-radius: 8px;
+    background: #071a37;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 700;
+    padding: 12px;
+    cursor: pointer;
+}
+
+.login-btn:hover {
+    background: #0b254f;
+}
+
+.login-note {
+    margin-top: 18px;
+    text-align: center;
+    font-size: 12px;
+    color: #64748b;
+}

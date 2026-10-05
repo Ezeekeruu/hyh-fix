@@ -1,0 +1,24 @@
+/* HYH FIX — master data modules (categories, suppliers, service types).
+   Pages reuse inventory.css for layout/sidebar/topbar/table/form styles.
+   This sheet only adds what inventory.css lacks. */
+
+.alert-success {
+    background: #dcfce7;
+    border: 1px solid #86efac;
+    color: #15803d;
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin-bottom: 18px;
+}
+
+.master-count {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+.master-count strong {
+    color: var(--text-main);
+}

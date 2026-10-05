@@ -13,7 +13,7 @@ class Customer extends Model
     ];
     public function devices()
     {
-        return $this->hasMany(Devices::class);
+        return $this->hasMany(Device::class);
     }
     public function sales()
     {

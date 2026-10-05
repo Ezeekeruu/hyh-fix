@@ -14,6 +14,7 @@
 
     <!-- Stylesheet -->
     <link rel="stylesheet" href="{{ asset('css/transaction.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/topbar-user.css') }}">
 </head>
 
 <body>
@@ -27,7 +28,8 @@
             </div>
 
             <nav class="sidebar-nav">
-                <a href="{{ url('/dashboard') }}" class="nav-link">
+                <p class="nav-group-label">MAIN</p>
+                <a href="{{ auth()->check() && auth()->user()->isStaff() ? url('/staff/dashboard') : url('/dashboard') }}" class="nav-link">
                     <i class="fa-solid fa-table-cells-large"></i>
                     Dashboard
                 </a>
@@ -37,6 +39,7 @@
                     POS
                 </a>
 
+                <p class="nav-group-label">MANAGEMENT</p>
                 <a href="{{ url('/repair-management') }}" class="nav-link ">
                     <i class="fa-solid fa-wrench"></i>
                     Repair Management
@@ -52,23 +55,35 @@
                     Inventory
                 </a>
 
+@if(auth()->check() && auth()->user()->isAdmin())
+                <p class="nav-group-label">ADMIN</p>
                 <a href="{{ url('/reports') }}" class="nav-link">
                     <i class="fa-solid fa-chart-column"></i>
                     Reports
+                </a>
+
+                <a href="{{ url('/categories') }}" class="nav-link">
+                    <i class="fa-solid fa-tags"></i>
+                    Categories
+                </a>
+
+                <a href="{{ url('/suppliers') }}" class="nav-link">
+                    <i class="fa-solid fa-truck-field"></i>
+                    Suppliers
+                </a>
+
+                <a href="{{ url('/service-types') }}" class="nav-link">
+                    <i class="fa-solid fa-screwdriver-wrench"></i>
+                    Service Types
                 </a>
 
                 <a href="{{ url('/user-management') }}" class="nav-link">
                     <i class="fa-solid fa-users"></i>
                     User Management
                 </a>
+@endif
             </nav>
 
-            <div class="sidebar-footer">
-                <a href="{{ url('/logout') }}" class="nav-link logout">
-                    <i class="fa-solid fa-right-from-bracket"></i>
-                    Log Out
-                </a>
-            </div>
         </aside>
 
         <!-- Main Content Area -->
@@ -84,18 +99,41 @@
                 </div>
 
                 <div class="topbar-right">
-                    <button class="notification-btn" type="button">
-                        <i class="fa-regular fa-bell"></i>
-                    </button>
 
-                    <div class="profile">
-                        <div class="avatar"></div>
-                        <div class="profile-info">
-                            <h4>Sonayah Faisal</h4>
-                            <span>Manager</span>
+                    <div class="profile-dropdown">
+                        <button type="button" class="profile-btn" aria-haspopup="true" onclick="toggleProfileMenu(event)">
+                            <div class="avatar"></div>
+                            <div class="profile-info">
+                                <h4>{{ auth()->user()->name }}</h4>
+                                <span>{{ auth()->user()->roleLabel() }}</span>
+                            </div>
+                            <i class="fa-solid fa-chevron-down"></i>
+                        </button>
+                        <div class="profile-menu" hidden>
+                            <form method="POST" action="{{ route('logout') }}">
+                                @csrf
+                                <button type="submit" title="Log out">
+                                    <i class="fa-solid fa-right-from-bracket"></i>
+                                    Logout
+                                </button>
+                            </form>
                         </div>
-                        <i class="fa-solid fa-chevron-down"></i>
                     </div>
+                    <script>
+                    function toggleProfileMenu(event) {
+                        event.stopPropagation();
+                        var menu = event.currentTarget.parentElement.querySelector('.profile-menu');
+                        var willOpen = menu.hasAttribute('hidden');
+                        document.querySelectorAll('.profile-menu').forEach(function (m) { m.setAttribute('hidden', ''); });
+                        if (willOpen) { menu.removeAttribute('hidden'); }
+                    }
+                    document.addEventListener('click', function () {
+                        document.querySelectorAll('.profile-menu').forEach(function (m) { m.setAttribute('hidden', ''); });
+                    });
+                    document.addEventListener('keydown', function (e) {
+                        if (e.key === 'Escape') { document.querySelectorAll('.profile-menu').forEach(function (m) { m.setAttribute('hidden', ''); }); }
+                    });
+                    </script>
                 </div>
             </header>
 
@@ -380,6 +418,30 @@
         }
     </script>
 
+
+    <script>
+        document.querySelectorAll('.menu-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var collapsed = document.body.classList.toggle('nav-collapsed');
+                var sidebar = document.querySelector('.sidebar');
+                var content = document.querySelector('.main-content');
+                if (sidebar) { sidebar.style.display = collapsed ? 'none' : ''; }
+                if (content) { content.style.marginLeft = collapsed ? '0px' : ''; }
+                setTimeout(function () { window.dispatchEvent(new Event('resize')); }, 320);
+            });
+        });
+
+        document.querySelectorAll('form').forEach(function (form) {
+            if (form.id === 'pos-filter-form') return;
+            var searchInput = form.querySelector('input[name="search"]');
+            if (!searchInput) return;
+            var liveSearchTimer;
+            searchInput.addEventListener('input', function () {
+                clearTimeout(liveSearchTimer);
+                liveSearchTimer = setTimeout(function () { form.requestSubmit(); }, 450);
+            });
+        });
+    </script>
 </body>
 
 </html>

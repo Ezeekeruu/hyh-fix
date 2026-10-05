@@ -125,9 +125,8 @@ class UserController extends Controller
     {
         $user = User::findOrFail($id);
 
-        return view('users.show', [
-            'user' => $user
-        ]);
+        // No dedicated user detail page: the users list is canonical.
+        return redirect()->route('users.index');
     }
 
 
@@ -161,8 +160,8 @@ class UserController extends Controller
             // Accept both select options and underlying DB roles
             'role' => 'required|in:manager,secretary,sales-clerk,technician,admin,staff',
 
-            // Accept active, disabled, and inactive
-            'status' => 'required|in:active,disabled,inactive',
+            // Only values the users.status enum accepts.
+            'status' => 'required|in:active,disabled',
         ]);
 
         $roleInput = $request->input('role');

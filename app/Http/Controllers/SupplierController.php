@@ -4,80 +4,75 @@ namespace App\Http\Controllers;
 
 use App\Models\Supplier;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class SupplierController extends Controller
 {
-
     public function index()
     {
-        $suppliers = Supplier::latest()->get();
-        return view('suppliers.index', [
-            'suppliers' => $suppliers
+        $suppliers = Supplier::orderBy('supplier_name')->get();
+
+        return view('suppliers.suppliers-index', [
+            'suppliers' => $suppliers,
         ]);
     }
 
     public function create()
     {
-        return view('suppliers.create');
+        return view('suppliers.add_supplier');
     }
 
- 
     public function store(Request $request)
     {
-    
         $request->validate([
-            'supplier_name' => 'required|string|max:100',
-            'contact_info'  => 'nullable|string|max:100',
-            'location'      => 'nullable|string|max:255',
+            'supplier_name' => 'required|string|max:100|unique:suppliers,supplier_name',
+            'contact_info' => 'nullable|string|max:100',
+            'location' => 'nullable|string|max:255',
         ]);
 
-        $supplier = new Supplier();
-
+        $supplier = new Supplier;
         $supplier->supplier_name = $request->input('supplier_name');
-        $supplier->contact_info  = $request->input('contact_info');
-        $supplier->location      = $request->input('location');
-
+        // Columns are NOT NULL in the schema, so store '' instead of null.
+        $supplier->contact_info = $request->input('contact_info') ?? '';
+        $supplier->location = $request->input('location') ?? '';
         $supplier->save();
 
         return redirect()
-            ->back()
+            ->route('suppliers.index')
             ->with('success', 'Supplier added successfully.');
     }
 
     public function show($id)
     {
-        $supplier = Supplier::findOrFail($id);
-
-        return view('suppliers.show', [
-            'supplier' => $supplier
-        ]);
+        return redirect()->route('suppliers.index');
     }
 
-    
     public function edit($id)
     {
         $supplier = Supplier::findOrFail($id);
 
-        return view('suppliers.edit', [
-            'supplier' => $supplier
+        return view('suppliers.edit_supplier', [
+            'supplier' => $supplier,
         ]);
     }
-
 
     public function update(Request $request, $id)
     {
         $request->validate([
-            'supplier_name' => 'required|string|max:100',
-            'contact_info'  => 'nullable|string|max:100',
-            'location'      => 'nullable|string|max:255',
+            'supplier_name' => [
+                'required',
+                'string',
+                'max:100',
+                Rule::unique('suppliers', 'supplier_name')->ignore($id),
+            ],
+            'contact_info' => 'nullable|string|max:100',
+            'location' => 'nullable|string|max:255',
         ]);
 
         $supplier = Supplier::findOrFail($id);
-
         $supplier->supplier_name = $request->input('supplier_name');
-        $supplier->contact_info  = $request->input('contact_info');
-        $supplier->location      = $request->input('location');
-
+        $supplier->contact_info = $request->input('contact_info') ?? '';
+        $supplier->location = $request->input('location') ?? '';
         $supplier->save();
 
         return redirect()
@@ -85,12 +80,9 @@ class SupplierController extends Controller
             ->with('success', 'Supplier updated successfully.');
     }
 
-   
     public function destroy($id)
     {
-        $supplier = Supplier::findOrFail($id);
-
-        $supplier->delete();
+        Supplier::findOrFail($id)->delete();
 
         return redirect()
             ->route('suppliers.index')

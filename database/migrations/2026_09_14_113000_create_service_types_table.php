@@ -9,10 +9,9 @@ return new class extends Migration
     /**
      * Run the migrations.
      *
-     * Backs the existing App\Models\ServiceType model and the
-     * "New Service Type" quick-add form on the Add Product page
-     * (RepairTicketController@storeServiceType). No table shipped
-     * with the repo, so the Add Ticket dropdown 500s without this.
+     * Backs the App\Models\ServiceType model and the standalone
+     * Service Types module (ServiceTypeController). The repair ticket
+     * form reads its dropdown options from this table.
      */
     public function up(): void
     {

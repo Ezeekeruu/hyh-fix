@@ -20,28 +20,9 @@ class SaleController extends Controller
     // =========================================================
     public function index()
     {
-        // Get all sales from the database.
-        //
-        // with() also loads the customer and user
-        // related to each sale.
-        $sales = Sale::with([
-            'customer',
-            'user'
-        ])
-
-            // Display the newest sales first.
-            ->latest()
-
-            // Execute the query and get the results.
-            ->get();
-
-
-        // Open the sales index page.
-        //
-        // Send the sales data to the Blade view.
-        return view('sales.index', [
-            'sales' => $sales
-        ]);
+        // No dedicated sales list page: the transaction history
+        // (SaleController@transactionHistory) is the canonical list.
+        return redirect()->route('transaction.history');
     }
 
 
@@ -399,25 +380,8 @@ class SaleController extends Controller
     // =========================================================
     public function edit($id)
     {
-        // Find the sale we want to edit.
-        //
-        // Also load the products belonging to
-        // each sale item.
-        $sale = Sale::with('saleItems.product')
-            ->findOrFail($id);
-
-
-        // Get all customers for the customer dropdown.
-        $customers = Customer::orderBy('name')->get();
-
-
-        // Open the edit form.
-        //
-        // Send the sale and customers to the view.
-        return view('sales.edit', [
-            'sale' => $sale,
-            'customers' => $customers
-        ]);
+        // No dedicated edit page: send back to the sale's receipt.
+        return redirect()->route('sales.show', $id);
     }
 
 
@@ -439,9 +403,9 @@ class SaleController extends Controller
             'required|string|max:50',
 
 
-            // Only these statuses are allowed.
+            // Only these statuses are allowed (matches the sales.status enum).
             'status' =>
-            'required|string|in:completed,cancelled,refunded',
+            'required|string|in:completed,voided',
         ]);
 
 
@@ -464,25 +428,21 @@ class SaleController extends Controller
 
 
             // =================================================
-            // RETURN STOCK IF SALE IS CANCELLED/REFUNDED
+            // RETURN STOCK IF SALE IS VOIDED
             // =================================================
 
             // Check whether:
             //
             // 1. The old sale status is completed
             // AND
-            // 2. The new status is cancelled or refunded
+            // 2. The new status is voided
             //
             // If both are true, return the sold products
             // back into inventory.
             if (
                 $sale->status === 'completed'
                 &&
-                (
-                    $newStatus === 'cancelled'
-                    ||
-                    $newStatus === 'refunded'
-                )
+                $newStatus === 'voided'
             ) {
 
 
@@ -535,9 +495,9 @@ class SaleController extends Controller
         });
 
 
-        // Return to the sales list.
+        // Return to the transaction history (the canonical sales list).
         return redirect()
-            ->route('sales.index')
+            ->route('transaction.history')
 
             // Display a success message.
             ->with(
@@ -613,9 +573,9 @@ class SaleController extends Controller
 
 
         // After deleting the sale,
-        // return to the sales list.
+        // return to the transaction history.
         return redirect()
-            ->route('sales.index')
+            ->route('transaction.history')
 
             // Display a success message.
             ->with(

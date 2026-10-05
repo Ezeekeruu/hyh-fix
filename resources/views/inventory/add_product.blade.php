@@ -14,6 +14,7 @@
 
     <!-- Stylesheet -->
     <link rel="stylesheet" href="{{ asset('css/inventory.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/topbar-user.css') }}">
 </head>
 
 <body>
@@ -27,7 +28,8 @@
             </div>
 
             <nav class="sidebar-nav">
-                <a href="{{ url('/dashboard') }}" class="nav-link">
+                <p class="nav-group-label">MAIN</p>
+                <a href="{{ auth()->check() && auth()->user()->isStaff() ? url('/staff/dashboard') : url('/dashboard') }}" class="nav-link">
                     <i class="fa-solid fa-table-cells-large"></i>
                     Dashboard
                 </a>
@@ -37,6 +39,7 @@
                     POS
                 </a>
 
+                <p class="nav-group-label">MANAGEMENT</p>
                 <a href="{{ url('/repair-management') }}" class="nav-link ">
                     <i class="fa-solid fa-wrench"></i>
                     Repair Management
@@ -52,23 +55,35 @@
                     Inventory
                 </a>
 
+@if(auth()->check() && auth()->user()->isAdmin())
+                <p class="nav-group-label">ADMIN</p>
                 <a href="{{ url('/reports') }}" class="nav-link">
                     <i class="fa-solid fa-chart-column"></i>
                     Reports
+                </a>
+
+                <a href="{{ url('/categories') }}" class="nav-link">
+                    <i class="fa-solid fa-tags"></i>
+                    Categories
+                </a>
+
+                <a href="{{ url('/suppliers') }}" class="nav-link">
+                    <i class="fa-solid fa-truck-field"></i>
+                    Suppliers
+                </a>
+
+                <a href="{{ url('/service-types') }}" class="nav-link">
+                    <i class="fa-solid fa-screwdriver-wrench"></i>
+                    Service Types
                 </a>
 
                 <a href="{{ url('/user-management') }}" class="nav-link">
                     <i class="fa-solid fa-users"></i>
                     User Management
                 </a>
+@endif
             </nav>
 
-            <div class="sidebar-footer">
-                <a href="{{ url('/logout') }}" class="nav-link logout">
-                    <i class="fa-solid fa-right-from-bracket"></i>
-                    Log Out
-                </a>
-            </div>
         </aside>
 
         <!-- Main Content Area -->
@@ -80,6 +95,40 @@
                     <i class="fa-solid fa-arrow-left"></i>
                 </a>
                 <h2>Add New Product</h2>
+                <div class="profile-dropdown" style="margin-left:auto;">
+                    <button type="button" class="profile-btn" aria-haspopup="true" onclick="toggleProfileMenu(event)">
+                        <div class="avatar"></div>
+                        <div class="profile-info">
+                            <h4>{{ auth()->user()->name }}</h4>
+                            <span>{{ auth()->user()->roleLabel() }}</span>
+                        </div>
+                        <i class="fa-solid fa-chevron-down"></i>
+                    </button>
+                    <div class="profile-menu" hidden>
+                        <form method="POST" action="{{ route('logout') }}">
+                            @csrf
+                            <button type="submit" title="Log out">
+                                <i class="fa-solid fa-right-from-bracket"></i>
+                                Logout
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                <script>
+                function toggleProfileMenu(event) {
+                    event.stopPropagation();
+                    var menu = event.currentTarget.parentElement.querySelector('.profile-menu');
+                    var willOpen = menu.hasAttribute('hidden');
+                    document.querySelectorAll('.profile-menu').forEach(function (m) { m.setAttribute('hidden', ''); });
+                    if (willOpen) { menu.removeAttribute('hidden'); }
+                }
+                document.addEventListener('click', function () {
+                    document.querySelectorAll('.profile-menu').forEach(function (m) { m.setAttribute('hidden', ''); });
+                });
+                document.addEventListener('keydown', function (e) {
+                    if (e.key === 'Escape') { document.querySelectorAll('.profile-menu').forEach(function (m) { m.setAttribute('hidden', ''); }); }
+                });
+                </script>
             </div>
 
             <!-- Wide Form Page Wrapper -->
@@ -213,104 +262,6 @@
                         </div>
 
                     </form>
-                </section>
-
-                <!-- CARD 2: ADD CATEGORY, SERVICE TYPE & SUPPLIER -->
-                <section class="form-card">
-                    <div class="form-card-header">
-                        <div class="form-card-icon">
-                            <i class="fa-solid fa-layer-group"></i>
-                        </div>
-                        <div>
-                            <h3>Add Category, Service Type & Supplier</h3>
-                            <p>Quickly register new categories, service types, or suppliers to make them immediately available for selection above.</p>
-                        </div>
-                    </div>
-
-                    <!-- 3-Column Grid for Quick Add Sub-forms -->
-                    <div class="form-row three-col">
-
-                        <!-- 1. ADD CATEGORY -->
-                        <form action="{{ route('categories.store') }}" method="POST" class="sub-form-card">
-                            @csrf
-                            <div class="sub-form-header">
-                                <i class="fa-solid fa-tags"></i>
-                                <h4>New Category</h4>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="category_name">Category Name</label>
-                                <input type="text" id="category_name" name="category_name" placeholder="e.g. Battery Replacement" required maxlength="100">
-                            </div>
-
-                            <div class="sub-form-actions">
-                                <button type="submit" class="btn-add-product">
-                                    <i class="fa-solid fa-plus"></i>
-                                    Save Category
-                                </button>
-                            </div>
-                        </form>
-
-                        <!-- 2. ADD SERVICE TYPE (NEW) -->
-                        <form action="{{ route('service-types.store') }}"
-                            method="POST"
-                            class="sub-form-card">
-                            @csrf
-
-                            <div class="sub-form-header">
-                                <i class="fa-solid fa-wrench"></i>
-                                <h4>New Service Type</h4>
-                            </div>
-
-                            <div class="form-group">
-                                <label>Service Type Name</label>
-                                <input type="text"
-                                    name="name"
-                                    required
-                                    maxlength="100"
-                                    placeholder="Enter Service Type">
-                            </div>
-
-                            <div class="sub-form-actions">
-                                <button type="submit" class="btn-add-product">
-                                    <i class="fa-solid fa-plus"></i>
-                                    Save Service
-                                </button>
-                            </div>
-                        </form>
-
-                        <!-- 3. ADD SUPPLIER -->
-                        <form action="{{ route('suppliers.store') }}" method="POST" class="sub-form-card">
-                            @csrf
-                            <div class="sub-form-header">
-                                <i class="fa-solid fa-truck-field"></i>
-                                <h4>New Supplier</h4>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="supplier_name">Supplier Name</label>
-                                <input type="text" id="supplier_name" name="supplier_name" placeholder="e.g. Apex Tech Supplies" required maxlength="100">
-                            </div>
-
-                            <div class="form-group">
-                                <label for="contact_info">Contact Info</label>
-                                <input type="text" id="contact_info" name="contact_info" placeholder="e.g. 0917-123-4567 / sales@apex.com" maxlength="100">
-                            </div>
-
-                            <div class="form-group">
-                                <label for="location">Location / Address</label>
-                                <input type="text" id="location" name="location" placeholder="e.g. Davao City, Philippines" maxlength="255">
-                            </div>
-
-                            <div class="sub-form-actions">
-                                <button type="submit" class="btn-add-product">
-                                    <i class="fa-solid fa-plus"></i>
-                                    Save Supplier
-                                </button>
-                            </div>
-                        </form>
-
-                    </div>
                 </section>
 
             </div>

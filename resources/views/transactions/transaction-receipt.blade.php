@@ -13,6 +13,7 @@
         href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
 
     <link rel="stylesheet" href="{{ asset('css/transaction.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/topbar-user.css') }}">
 </head>
 
 <body>
@@ -28,8 +29,9 @@
             </div>
 
             <nav class="sidebar-nav">
+                <p class="nav-group-label">MAIN</p>
 
-                <a href="{{ url('/dashboard') }}" class="nav-link">
+                <a href="{{ auth()->check() && auth()->user()->isStaff() ? url('/staff/dashboard') : url('/dashboard') }}" class="nav-link">
                     <i class="fa-solid fa-table-cells-large"></i>
                     Dashboard
                 </a>
@@ -39,6 +41,7 @@
                     POS
                 </a>
 
+                <p class="nav-group-label">MANAGEMENT</p>
                 <a href="{{ url('/repair-management') }}" class="nav-link ">
                     <i class="fa-solid fa-wrench"></i>
                     Repair Management
@@ -55,15 +58,33 @@
                     Inventory
                 </a>
 
+@if(auth()->check() && auth()->user()->isAdmin())
+                <p class="nav-group-label">ADMIN</p>
                 <a href="{{ url('/reports') }}" class="nav-link">
                     <i class="fa-solid fa-chart-column"></i>
                     Reports
+                </a>
+
+                <a href="{{ url('/categories') }}" class="nav-link">
+                    <i class="fa-solid fa-tags"></i>
+                    Categories
+                </a>
+
+                <a href="{{ url('/suppliers') }}" class="nav-link">
+                    <i class="fa-solid fa-truck-field"></i>
+                    Suppliers
+                </a>
+
+                <a href="{{ url('/service-types') }}" class="nav-link">
+                    <i class="fa-solid fa-screwdriver-wrench"></i>
+                    Service Types
                 </a>
 
                 <a href="{{ url('/user-management') }}" class="nav-link">
                     <i class="fa-solid fa-users"></i>
                     User Management
                 </a>
+@endif
 
             </nav>
 
@@ -127,6 +148,11 @@
                     <div>
                         <strong>Payment</strong>
                         <span>{{ $sale->payment_method }}</span>
+                    </div>
+
+                    <div>
+                        <strong>Served By</strong>
+                        <span>{{ $sale->user->name ?? 'Staff' }}</span>
                     </div>
 
                 </div>

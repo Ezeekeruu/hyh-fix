@@ -19,6 +19,24 @@ class DashboardController extends Controller
 
     public function index(Request $request)
     {
+        if (auth()->user()?->role !== 'admin') {
+            return redirect()->route('staff.dashboard');
+        }
+
+        return view('dashboard.dashboard-index', $this->dashboardData($request));
+    }
+
+    public function staffDashboard(Request $request)
+    {
+        if (auth()->user()?->role === 'admin') {
+            return redirect()->route('dashboard');
+        }
+
+        return view('dashboard.staff-dashboard', $this->dashboardData($request));
+    }
+
+    private function dashboardData(Request $request): array
+    {
         $customerCount = Customer::count();
         $deviceCount   = Device::count();
         $productCount  = Product::count();
@@ -85,6 +103,12 @@ class DashboardController extends Controller
                 'Complete' AS status
             ");
 
+        // CONCAT() is MySQL-only, so build the device label with the
+        // concatenation operator each driver supports (sqlite uses ||).
+        $deviceLabel = DB::getDriverName() === 'sqlite'
+            ? "(devices.brand || ' ' || devices.model)"
+            : "CONCAT(devices.brand, ' ', devices.model)";
+
         $repairs = DB::table('repair_tickets')
             ->join('devices', 'devices.id', '=', 'repair_tickets.device_id')
             ->join('customers', 'customers.id', '=', 'devices.customer_id')
@@ -93,7 +117,7 @@ class DashboardController extends Controller
                 repair_tickets.id AS record_id,
                 'Repair' AS type,
                 customers.name AS customer_name,
-                CONCAT(devices.brand, ' ', devices.model) AS item_name,
+                {$deviceLabel} AS item_name,
                 1 AS item_count,
                 repair_tickets.problem_description AS service_text,
                 CASE WHEN repair_tickets.status = 'completed'
@@ -109,8 +133,9 @@ class DashboardController extends Controller
 
         $base = DB::query()->fromSub($retail->unionAll($repairs), 't');
 
-        // Card = all transactions, ignoring search/filters.
-        $totalTransactions = (clone $base)->count();
+        // Card = today's transactions (same combined list, filtered to the
+        // current day). whereDate works on the derived table on MySQL + SQLite.
+        $totalTransactions = (clone $base)->whereDate('transaction_date', Carbon::today())->count();
 
         // ---- Search + filters ----
         $search  = trim((string) $request->query('search', ''));
@@ -141,7 +166,7 @@ class DashboardController extends Controller
             ->withQueryString()
             ->fragment('transactions');
 
-        return view('dashboard.dashboard-index', [
+        return [
             'customerCount'     => $customerCount,
             'deviceCount'       => $deviceCount,
             'productCount'      => $productCount,
@@ -154,7 +179,7 @@ class DashboardController extends Controller
             'chart'             => $chart,
             'topRepairService'  => $topRepairService,
             'topRetailProduct'  => $topRetailProduct,
-        ]);
+        ];
     }
 
     /**

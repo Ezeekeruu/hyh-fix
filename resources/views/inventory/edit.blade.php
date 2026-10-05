@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
     <!-- Stylesheet -->
     <link rel="stylesheet" href="{{ asset('css/inventory.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/topbar-user.css') }}">
 </head>
 
 <body>
@@ -22,7 +23,8 @@
                 <p>Cellphone Repair & Accessories</p>
             </div>
             <nav class="sidebar-nav">
-                <a href="{{ url('/dashboard') }}" class="nav-link">
+                <p class="nav-group-label">MAIN</p>
+                <a href="{{ auth()->check() && auth()->user()->isStaff() ? url('/staff/dashboard') : url('/dashboard') }}" class="nav-link">
                     <i class="fa-solid fa-table-cells-large"></i>
                     Dashboard
                 </a>
@@ -30,6 +32,7 @@
                     <i class="fa-solid fa-cash-register"></i>
                     POS
                 </a>
+                <p class="nav-group-label">MANAGEMENT</p>
                 <a href="{{ url('/repair-management') }}" class="nav-link ">
                     <i class="fa-solid fa-wrench"></i>
                     Repair Management
@@ -42,21 +45,34 @@
                     <i class="fa-solid fa-box"></i>
                     Inventory
                 </a>
+@if(auth()->check() && auth()->user()->isAdmin())
+                <p class="nav-group-label">ADMIN</p>
                 <a href="{{ url('/reports') }}" class="nav-link">
                     <i class="fa-solid fa-chart-column"></i>
                     Reports
                 </a>
+
+                <a href="{{ url('/categories') }}" class="nav-link">
+                    <i class="fa-solid fa-tags"></i>
+                    Categories
+                </a>
+
+                <a href="{{ url('/suppliers') }}" class="nav-link">
+                    <i class="fa-solid fa-truck-field"></i>
+                    Suppliers
+                </a>
+
+                <a href="{{ url('/service-types') }}" class="nav-link">
+                    <i class="fa-solid fa-screwdriver-wrench"></i>
+                    Service Types
+                </a>
+
                 <a href="{{ url('/user-management') }}" class="nav-link">
                     <i class="fa-solid fa-users"></i>
                     User Management
                 </a>
+@endif
             </nav>
-            <div class="sidebar-footer">
-                <a href="{{ url('/logout') }}" class="nav-link logout">
-                    <i class="fa-solid fa-right-from-bracket"></i>
-                    Log Out
-                </a>
-            </div>
         </aside>
 
         <!-- Main Content Area -->
@@ -67,6 +83,40 @@
                     <i class="fa-solid fa-arrow-left"></i>
                 </a>
                 <h2>Edit Product</h2>
+                <div class="profile-dropdown" style="margin-left:auto;">
+                    <button type="button" class="profile-btn" aria-haspopup="true" onclick="toggleProfileMenu(event)">
+                        <div class="avatar"></div>
+                        <div class="profile-info">
+                            <h4>{{ auth()->user()->name }}</h4>
+                            <span>{{ auth()->user()->roleLabel() }}</span>
+                        </div>
+                        <i class="fa-solid fa-chevron-down"></i>
+                    </button>
+                    <div class="profile-menu" hidden>
+                        <form method="POST" action="{{ route('logout') }}">
+                            @csrf
+                            <button type="submit" title="Log out">
+                                <i class="fa-solid fa-right-from-bracket"></i>
+                                Logout
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                <script>
+                function toggleProfileMenu(event) {
+                    event.stopPropagation();
+                    var menu = event.currentTarget.parentElement.querySelector('.profile-menu');
+                    var willOpen = menu.hasAttribute('hidden');
+                    document.querySelectorAll('.profile-menu').forEach(function (m) { m.setAttribute('hidden', ''); });
+                    if (willOpen) { menu.removeAttribute('hidden'); }
+                }
+                document.addEventListener('click', function () {
+                    document.querySelectorAll('.profile-menu').forEach(function (m) { m.setAttribute('hidden', ''); });
+                });
+                document.addEventListener('keydown', function (e) {
+                    if (e.key === 'Escape') { document.querySelectorAll('.profile-menu').forEach(function (m) { m.setAttribute('hidden', ''); }); }
+                });
+                </script>
             </div>
 
             <!-- Form Container Wrapper -->

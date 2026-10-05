@@ -1,0 +1,110 @@
+/* HYH FIX — shared topbar user dropdown (loaded alongside each page's own css).
+   Markup: .profile-dropdown > button.profile-btn (+ .avatar/.profile-info from page css) + .profile-menu. */
+
+.profile-dropdown {
+    position: relative;
+}
+
+.profile-btn {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font: inherit;
+    color: inherit;
+    padding: 4px 8px;
+    border-radius: 10px;
+    text-align: left;
+}
+
+.profile-btn:hover {
+    background: #f1f5f9;
+}
+
+.profile-btn .fa-chevron-down {
+    font-size: 12px;
+    color: #64748b;
+}
+
+.profile-menu {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 8px);
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    box-shadow: 0 12px 30px rgba(2, 6, 23, 0.12);
+    min-width: 170px;
+    padding: 6px;
+    z-index: 60;
+}
+
+.profile-menu button[type="submit"] {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #b91c1c;
+    font-family: inherit;
+}
+
+.profile-menu button[type="submit"]:hover {
+    background: #fef2f2;
+}
+
+/* Sidebar nav groups (MAIN / MANAGEMENT / ADMIN). */
+.nav-group-label {
+    margin: 0;
+    padding: 16px 16px 6px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    color: #7d8db0;
+}
+
+.sidebar-nav > .nav-group-label:first-child {
+    padding-top: 4px;
+}
+.sidebar {
+    transition: transform 0.25s ease;
+}
+
+.main-content {
+    transition: margin-left 0.25s ease;
+}
+
+/* Flex item: allow content to shrink below its min-content width so page
+   level horizontal scrollbars never appear (inner tables scroll themselves). */
+.main-content {
+    min-width: 0;
+}
+
+body.nav-collapsed .sidebar {
+    display: none;
+}
+
+body.nav-collapsed .main-content {
+    margin-left: 0;
+}
+/* Let grids, cards and charts shrink when the sidebar returns. Without
+   min-width: 0, wide children (stat values, chart canvas) keep the expanded
+   width and force a page-level horizontal scrollbar. */
+.stats-grid > *,
+.analytics-grid > *,
+.analytics-card,
+.low-stock-card,
+.chart-placeholder,
+.transactions-card,
+.inventory-card,
+.logs-card {
+    min-width: 0;
+}

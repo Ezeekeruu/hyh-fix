@@ -150,8 +150,7 @@ body {
     font-weight: 700;
 }
 
-.menu-btn,
-.notification-btn {
+.menu-btn {
     border: none;
     background: none;
     cursor: pointer;
@@ -219,7 +218,7 @@ body {
     border-radius: 10px;
     display: flex;
     align-items: center;
-    padding: 0 14px;
+    padding: 0 4px 0 14px;
     box-shadow: var(--shadow);
 }
 
@@ -1026,4 +1025,24 @@ body {
 
 .notice-ok:hover {
     background: var(--primary-hover);
+}
+/* Direct-quantity input inside cart rows */
+.qty-control .qty-input {
+    width: 46px;
+    border: none;
+    background: transparent;
+    outline: none;
+    text-align: center;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    color: #111827;
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
+
+.qty-control .qty-input::-webkit-outer-spin-button,
+.qty-control .qty-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
 }

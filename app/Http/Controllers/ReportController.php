@@ -34,6 +34,7 @@ class ReportController extends Controller
     public function pdf(Request $request)
     {
         $data = $this->buildData($request);
+        $data['generatedBy'] = auth()->user()?->name ?? 'System';
 
         return Pdf::loadView('reports.reports-pdf', $data)
             ->download('hyh-report-' . $data['startDate']->toDateString() . '-to-' . $data['endDate']->toDateString() . '.pdf');

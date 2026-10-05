@@ -31,6 +31,21 @@ class User extends Authenticatable
         ];
     }
 
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin';
+    }
+
+    public function isStaff(): bool
+    {
+        return $this->role === 'staff';
+    }
+
+    public function roleLabel(): string
+    {
+        return $this->role === 'admin' ? 'Admin' : 'Staff';
+    }
+
     public function assignedRepairTickets()
     {
         return $this->hasMany(RepairTicket::class, 'assigned_to');

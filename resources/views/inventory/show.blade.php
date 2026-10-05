@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Edit User - HYH FIX</title>
+    <title>{{ $product->product_name }} - HYH FIX</title>
 
     <!-- Inter Font -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -12,9 +12,10 @@
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
 
-    <!-- Stylesheet (shared with User Management & Add Page) -->
-    <link rel="stylesheet" href="{{ asset('css/users.css') }}">
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="{{ asset('css/inventory.css') }}">
     <link rel="stylesheet" href="{{ asset('css/topbar-user.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/master-data.css') }}">
 </head>
 
 <body>
@@ -40,7 +41,7 @@
                 </a>
 
                 <p class="nav-group-label">MANAGEMENT</p>
-                <a href="{{ url('/repair-management') }}" class="nav-link">
+                <a href="{{ url('/repair-management') }}" class="nav-link ">
                     <i class="fa-solid fa-wrench"></i>
                     Repair Management
                 </a>
@@ -50,7 +51,7 @@
                     Transaction History
                 </a>
 
-                <a href="{{ url('/inventory') }}" class="nav-link">
+                <a href="{{ url('/inventory') }}" class="nav-link active">
                     <i class="fa-solid fa-box"></i>
                     Inventory
                 </a>
@@ -77,7 +78,7 @@
                     Service Types
                 </a>
 
-                <a href="{{ url('/user-management') }}" class="nav-link active">
+                <a href="{{ url('/user-management') }}" class="nav-link">
                     <i class="fa-solid fa-users"></i>
                     User Management
                 </a>
@@ -89,12 +90,12 @@
         <!-- Main Content Area -->
         <main class="main-content">
 
-            <!-- Back-arrow header -->
+            <!-- Back-arrow Header -->
             <div class="form-page-header">
-                <a href="{{ url('/user-management') }}" class="btn-back" title="Back to User Management">
+                <a href="{{ route('products.index') }}" class="btn-back" title="Back to Inventory">
                     <i class="fa-solid fa-arrow-left"></i>
                 </a>
-                <h2>Edit User</h2>
+                <h2>{{ $product->product_name }}</h2>
                 <div class="profile-dropdown" style="margin-left:auto;">
                     <button type="button" class="profile-btn" aria-haspopup="true" onclick="toggleProfileMenu(event)">
                         <div class="avatar"></div>
@@ -131,92 +132,57 @@
                 </script>
             </div>
 
-            <!-- Centered Form Card -->
+            <!-- Detail Card -->
             <div class="form-page-wrapper">
                 <section class="form-card">
                     <div class="form-card-header">
-                        <div class="form-card-icon edit-icon">
-                            <i class="fa-solid fa-user-pen"></i>
+                        <div class="form-card-icon">
+                            @if($product->image_path)
+                            <img src="{{ asset('storage/' . $product->image_path) }}" alt="{{ $product->product_name }}" style="width: 40px; height: 40px; object-fit: cover; border-radius: 10px;">
+                            @else
+                            <i class="fa-solid fa-box"></i>
+                            @endif
                         </div>
                         <div>
-                            <h3>Update User Details</h3>
-                            <p>Modify account information and permissions for <strong>{{ $user->name }}</strong>.</p>
+                            <h3>{{ $product->product_name }}</h3>
+                            <p>SKU: {{ $product->sku }}</p>
                         </div>
                     </div>
 
-                    <form action="{{ url('/user-management/' . $user->id) }}" method="POST" class="user-form">
-                        @csrf
-                        @method('PUT')
+                    <div class="table-wrapper">
+                        <table>
+                            <tbody>
+                                <tr>
+                                    <td style="font-weight: 700; width: 220px;">Category</td>
+                                    <td>{{ $product->category?->category_name ?? 'N/A' }}</td>
+                                </tr>
+                                <tr>
+                                    <td style="font-weight: 700;">Supplier</td>
+                                    <td>{{ $product->supplier?->supplier_name ?? 'N/A' }}</td>
+                                </tr>
+                                <tr>
+                                    <td style="font-weight: 700;">Cost Price</td>
+                                    <td>₱{{ number_format($product->cost_price, 2) }}</td>
+                                </tr>
+                                <tr>
+                                    <td style="font-weight: 700;">Selling Price</td>
+                                    <td>₱{{ number_format($product->sell_price, 2) }}</td>
+                                </tr>
+                                <tr>
+                                    <td style="font-weight: 700;">Stock Quantity</td>
+                                    <td>{{ $product->stock_quantity }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
 
-                        <!-- Row 1: Full Name & Email Address -->
-                        <div class="form-row two-col">
-                            <div class="form-group">
-                                <label for="full_name">Full Name</label>
-                                <input
-                                    type="text"
-                                    id="full_name"
-                                    name="name"
-                                    value="{{ old('name', $user->name) }}"
-                                    placeholder="e.g. Sonayah Faisal"
-                                    required>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="email">Email Address</label>
-                                <input
-                                    type="email"
-                                    id="email"
-                                    name="email"
-                                    value="{{ old('email', $user->email) }}"
-                                    placeholder="name@gmail.com"
-                                    required>
-                            </div>
-                        </div>
-
-                        <!-- Row 2: Role & Account Status -->
-                        <div class="form-row two-col">
-                            <div class="form-group">
-                                <label for="role">Role</label>
-                                <select id="role" name="role" required>
-                                    <option value="" disabled>Select a role</option>
-                                    <option value="manager" {{ old('role', $user->role) == 'manager' || old('role', $user->role) == 'admin' ? 'selected' : '' }}>Manager</option>
-                                    <option value="secretary" {{ old('role', $user->role) == 'secretary' ? 'selected' : '' }}>Secretary</option>
-                                    <option value="sales-clerk" {{ old('role', $user->role) == 'sales-clerk' ? 'selected' : '' }}>Sales Clerk</option>
-                                    <option value="technician" {{ old('role', $user->role) == 'technician' ? 'selected' : '' }}>Technician</option>
-                                </select>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="status">Account Status</label>
-                                <select id="status" name="status" required>
-                                    <option value="active" {{ old('status', $user->status) == 'active' ? 'selected' : '' }}>Active</option>
-                                    <option value="disabled" {{ old('status', $user->status) == 'disabled' ? 'selected' : '' }}>Disabled</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="form-actions">
-                            <a href="{{ url('/user-management') }}" class="btn-cancel">
-                                <i class="fa-solid fa-xmark"></i>
-                                Cancel
-                            </a>
-                            <button type="submit" class="btn-add-product">
-                                <i class="fa-solid fa-floppy-disk"></i>
-                                Save Changes
-                            </button>
-                        </div>
-
-                        @if ($errors->any())
-                        <div class="form-error-box">
-                            <strong>Please fix the following errors:</strong>
-                            <ul>
-                                @foreach ($errors->all() as $error)
-                                <li>{{ $error }}</li>
-                                @endforeach
-                            </ul>
-                        </div>
-                        @endif
-                    </form>
+                    <div class="form-actions">
+                        <a href="{{ route('products.index') }}" class="btn-cancel">Back to Inventory</a>
+                        <a href="{{ route('products.edit', $product->id) }}" class="btn-add-product" style="text-decoration: none;">
+                            <i class="fa-solid fa-pen"></i>
+                            Edit Product
+                        </a>
+                    </div>
                 </section>
             </div>
         </main>

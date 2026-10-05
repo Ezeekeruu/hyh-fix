@@ -148,8 +148,7 @@ body {
     font-weight: 700;
 }
 
-.menu-btn,
-.notification-btn {
+.menu-btn {
     border: none;
     background: none;
     cursor: pointer;
@@ -229,7 +228,7 @@ body {
 /* CARDS */
 .stats-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     gap: 20px;
     margin-bottom: 24px;
 }
@@ -275,6 +274,16 @@ body {
     font-size: 48px;
     font-weight: 800;
     color: #111827;
+}
+
+/* Five summary cards share one row: scale values so peso amounts never clip. */
+.stats-grid .stat-card {
+    min-width: 0;
+}
+
+.stats-grid .stat-value {
+    font-size: clamp(26px, 2vw, 34px);
+    white-space: nowrap;
 }
 
 /* ANALYTICS GRID */
@@ -703,6 +712,10 @@ td {
 @media (max-width: 1400px) {
     .stats-grid {
         grid-template-columns: repeat(2, 1fr);
+    }
+
+    .stats-grid > .stat-card:last-child {
+        grid-column: 1 / -1;
     }
 
     .analytics-grid {
