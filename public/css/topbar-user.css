@@ -108,3 +108,35 @@ body.nav-collapsed .main-content {
 .logs-card {
     min-width: 0;
 }
+
+/* Compact sidebar on short screens so the full grouped nav (including
+   User Management) fits without scrolling. Scroll remains as fallback. */
+@media (max-height: 820px) {
+    .sidebar {
+        padding: 20px 18px;
+    }
+
+    .logo {
+        margin-bottom: 16px;
+    }
+
+    .logo h1 {
+        font-size: 32px;
+    }
+
+    .logo p {
+        display: none;
+    }
+
+    .sidebar-nav {
+        gap: 4px;
+    }
+
+    .nav-group-label {
+        padding: 10px 16px 4px;
+    }
+
+    .nav-link {
+        height: 44px;
+    }
+}

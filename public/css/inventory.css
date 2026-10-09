@@ -798,6 +798,28 @@ td {
     background: #fff;
 }
 
+/* File inputs: align the native button + filename neatly. */
+.form-group input[type="file"] {
+    padding: 6px 10px;
+    height: auto;
+    min-height: 42px;
+    cursor: pointer;
+    line-height: normal;
+}
+
+.form-group input[type="file"]::file-selector-button {
+    border: 1px solid var(--border-color);
+    background: #fff;
+    border-radius: 8px;
+    padding: 7px 14px;
+    margin-right: 12px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-main);
+    cursor: pointer;
+}
+
 /* RIGHT IMAGE PREVIEW BOX */
 .image-preview-container {
     width: 100%;

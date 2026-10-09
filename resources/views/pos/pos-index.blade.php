@@ -555,15 +555,16 @@
             element.classList.add('active');
         }
 
-        // Quick Cash Buttons
+        // Quick Cash Buttons (accumulate: each tap adds to what's entered)
         function setQuickCash(amount) {
-            let total = getCartTotal();
             let cashInput = document.getElementById('cash-received-input');
 
             if (amount === 'exact') {
-                cashInput.value = total.toFixed(2);
+                cashInput.value = getCartTotal().toFixed(2);
             } else {
-                cashInput.value = parseFloat(amount).toFixed(2);
+                let raw = cashInput.value.replace(/[^0-9.]/g, '');
+                let current = parseFloat(raw) || 0;
+                cashInput.value = (current + parseFloat(amount)).toFixed(2);
             }
             calculateChange();
         }
