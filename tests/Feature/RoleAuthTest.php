@@ -487,4 +487,32 @@ class RoleAuthTest extends TestCase
             $page2->assertSee($secondPage, false);
         }
     }
+
+    public function test_master_data_lists_search(): void
+    {
+        $admin = $this->makeUser('admin');
+
+        Category::create(['category_name' => 'QA Batteries']);
+        Category::create(['category_name' => 'QA Chargers']);
+        Supplier::create(['supplier_name' => 'QA Apex', 'contact_info' => 'c1', 'location' => 'Davao']);
+        Supplier::create(['supplier_name' => 'QA Metro', 'contact_info' => 'c2', 'location' => 'Manila']);
+        ServiceType::create(['name' => 'QA Screen Fix']);
+        ServiceType::create(['name' => 'QA Battery Fix']);
+
+        $cats = $this->actingAs($admin)->get('/categories?search=Batter');
+        $cats->assertOk();
+        $cats->assertSee('QA Batteries', false);
+        $cats->assertDontSee('QA Chargers', false);
+
+        // Suppliers match name, contact info, or location.
+        $sup = $this->actingAs($admin)->get('/suppliers?search=Manila');
+        $sup->assertOk();
+        $sup->assertSee('QA Metro', false);
+        $sup->assertDontSee('QA Apex', false);
+
+        $svc = $this->actingAs($admin)->get('/service-types?search=Screen');
+        $svc->assertOk();
+        $svc->assertSee('QA Screen Fix', false);
+        $svc->assertDontSee('QA Battery Fix', false);
+    }
 }

@@ -146,10 +146,24 @@
                 <div class="inventory-actions-bar">
                     <div class="master-count"><strong>{{ $serviceTypes->total() }}</strong> service types</div>
 
-                    <a href="{{ route('service-types.create') }}" class="btn-add-product" style="margin-left: auto; text-decoration: none;">
-                        <i class="fa-solid fa-plus"></i>
-                        Add New Service Type
-                    </a>
+                    <form action="{{ route('service-types.index') }}" method="GET" style="display: flex; gap: 10px; align-items: center; flex: 1;">
+                        <div class="search-box">
+                            <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                            <input type="text" name="search" value="{{ request('search') }}" placeholder="Search service types...">
+                            <button type="submit" class="search-btn">
+                                Search
+                            </button>
+                        </div>
+
+                        <a href="{{ route('service-types.index') }}" class="btn-filter-icon" title="Clear filters">
+                            <i class="fa-solid fa-filter-circle-xmark"></i>
+                        </a>
+
+                        <a href="{{ route('service-types.create') }}" class="btn-add-product" style="margin-left: auto; text-decoration: none;">
+                            <i class="fa-solid fa-plus"></i>
+                            Add New Service Type
+                        </a>
+                    </form>
                 </div>
 
                 <div class="table-wrapper">
@@ -237,6 +251,17 @@
                 if (sidebar) { sidebar.style.display = collapsed ? 'none' : ''; }
                 if (content) { content.style.marginLeft = collapsed ? '0px' : ''; }
                 setTimeout(function () { window.dispatchEvent(new Event('resize')); }, 320);
+            });
+        });
+
+        document.querySelectorAll('form').forEach(function (form) {
+            if (form.id === 'pos-filter-form') return;
+            var searchInput = form.querySelector('input[name="search"]');
+            if (!searchInput) return;
+            var liveSearchTimer;
+            searchInput.addEventListener('input', function () {
+                clearTimeout(liveSearchTimer);
+                liveSearchTimer = setTimeout(function () { form.requestSubmit(); }, 450);
             });
         });
     </script>

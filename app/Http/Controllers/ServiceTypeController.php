@@ -8,9 +8,16 @@ use Illuminate\Validation\Rule;
 
 class ServiceTypeController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $serviceTypes = ServiceType::orderBy('name')->paginate(10);
+        $query = ServiceType::query();
+
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where('name', 'like', "%{$search}%");
+        }
+
+        $serviceTypes = $query->orderBy('name')->paginate(10)->withQueryString();
 
         return view('service-types.service-types-index', [
             'serviceTypes' => $serviceTypes,

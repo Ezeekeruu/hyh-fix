@@ -8,9 +8,20 @@ use Illuminate\Validation\Rule;
 
 class SupplierController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $suppliers = Supplier::orderBy('supplier_name')->paginate(10);
+        $query = Supplier::query();
+
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('supplier_name', 'like', "%{$search}%")
+                    ->orWhere('contact_info', 'like', "%{$search}%")
+                    ->orWhere('location', 'like', "%{$search}%");
+            });
+        }
+
+        $suppliers = $query->orderBy('supplier_name')->paginate(10)->withQueryString();
 
         return view('suppliers.suppliers-index', [
             'suppliers' => $suppliers,

@@ -146,10 +146,24 @@
                 <div class="inventory-actions-bar">
                     <div class="master-count"><strong>{{ $suppliers->total() }}</strong> suppliers</div>
 
-                    <a href="{{ route('suppliers.create') }}" class="btn-add-product" style="margin-left: auto; text-decoration: none;">
-                        <i class="fa-solid fa-plus"></i>
-                        Add New Supplier
-                    </a>
+                    <form action="{{ route('suppliers.index') }}" method="GET" style="display: flex; gap: 10px; align-items: center; flex: 1;">
+                        <div class="search-box">
+                            <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                            <input type="text" name="search" value="{{ request('search') }}" placeholder="Search suppliers...">
+                            <button type="submit" class="search-btn">
+                                Search
+                            </button>
+                        </div>
+
+                        <a href="{{ route('suppliers.index') }}" class="btn-filter-icon" title="Clear filters">
+                            <i class="fa-solid fa-filter-circle-xmark"></i>
+                        </a>
+
+                        <a href="{{ route('suppliers.create') }}" class="btn-add-product" style="margin-left: auto; text-decoration: none;">
+                            <i class="fa-solid fa-plus"></i>
+                            Add New Supplier
+                        </a>
+                    </form>
                 </div>
 
                 <div class="table-wrapper">
@@ -241,6 +255,17 @@
                 if (sidebar) { sidebar.style.display = collapsed ? 'none' : ''; }
                 if (content) { content.style.marginLeft = collapsed ? '0px' : ''; }
                 setTimeout(function () { window.dispatchEvent(new Event('resize')); }, 320);
+            });
+        });
+
+        document.querySelectorAll('form').forEach(function (form) {
+            if (form.id === 'pos-filter-form') return;
+            var searchInput = form.querySelector('input[name="search"]');
+            if (!searchInput) return;
+            var liveSearchTimer;
+            searchInput.addEventListener('input', function () {
+                clearTimeout(liveSearchTimer);
+                liveSearchTimer = setTimeout(function () { form.requestSubmit(); }, 450);
             });
         });
     </script>
