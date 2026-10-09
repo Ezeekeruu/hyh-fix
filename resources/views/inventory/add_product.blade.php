@@ -203,6 +203,15 @@
                                     </div>
                                 </div>
 
+                                <!-- Low Stock Threshold -->
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="low_stock_threshold">Low Stock Threshold</label>
+                                        <input type="number" min="0" id="low_stock_threshold" name="low_stock_threshold" value="{{ old('low_stock_threshold', 10) }}" placeholder="10" required>
+                                        <small style="color:#6b7280; margin-top: 2px;">Status turns Low Stock when stock reaches this number.</small>
+                                    </div>
+                                </div>
+
                                 <!-- Cost Price & Selling Price -->
                                 <div class="form-row two-col">
                                     <div class="form-group">
@@ -213,6 +222,7 @@
                                     <div class="form-group">
                                         <label for="sell_price">Selling Price (₱)</label>
                                         <input type="number" step="0.01" min="0" id="sell_price" name="sell_price" value="{{ old('sell_price') }}" placeholder="0.00" required>
+                                        <small style="color:#6b7280; margin-top: 4px; display: block;">Recommended (cost + 30%): <strong id="suggest-value">—</strong> <button type="button" id="apply-suggest" style="background:none; border:none; color:#2563eb; font-weight:700; cursor:pointer; font-size:12px;">Apply</button></small>
                                     </div>
                                 </div>
 
@@ -283,6 +293,26 @@
                 if (placeholder) placeholder.style.display = 'flex';
             }
         }
+
+        // Recommended selling price: cost + 30%. Hint only — Apply fills it in.
+        const PRICE_MARKUP = 1.3;
+        function updateSuggestedPrice() {
+            const cost = parseFloat(document.getElementById('cost_price').value);
+            const label = document.getElementById('suggest-value');
+            if (isNaN(cost) || cost < 0) {
+                label.textContent = '—';
+                return;
+            }
+            label.textContent = '₱' + (cost * PRICE_MARKUP).toFixed(2);
+        }
+        document.getElementById('cost_price').addEventListener('input', updateSuggestedPrice);
+        document.getElementById('apply-suggest').addEventListener('click', function () {
+            const cost = parseFloat(document.getElementById('cost_price').value);
+            if (!isNaN(cost) && cost >= 0) {
+                document.getElementById('sell_price').value = (cost * PRICE_MARKUP).toFixed(2);
+            }
+        });
+        updateSuggestedPrice();
     </script>
 </body>
 

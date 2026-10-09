@@ -14,12 +14,14 @@ class Product extends Model
         'cost_price',
         'sell_price',
         'stock_quantity',
+        'low_stock_threshold',
         'image_path',
     ];
 
     protected $casts = [
         'cost_price' => 'decimal:2',
         'sell_price' => 'decimal:2',
+        'low_stock_threshold' => 'integer',
     ];
 
     // Returns a ready-to-use image URL, or null if no image was uploaded.

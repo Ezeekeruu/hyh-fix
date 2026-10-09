@@ -286,7 +286,7 @@
                                 <td>
                                     @if($product->stock_quantity <= 0)
                                         <span class="status-badge out-of-stock">Out of Stock</span>
-                                        @elseif($product->stock_quantity <= 10)
+                                        @elseif($product->stock_quantity <= $product->low_stock_threshold)
                                             <span class="status-badge low-stock">Low Stock</span>
                                             @else
                                             <span class="status-badge in-stock">In Stock</span>

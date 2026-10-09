@@ -25,7 +25,7 @@ class ProductController extends Controller
 
         // Global counts for stat cards across all pages
         $totalProducts = Product::count();
-        $lowStockCount = Product::where('stock_quantity', '>', 0)->where('stock_quantity', '<=', 10)->count();
+        $lowStockCount = Product::where('stock_quantity', '>', 0)->whereColumn('stock_quantity', '<=', 'low_stock_threshold')->count();
         $outOfStockCount = Product::where('stock_quantity', '<=', 0)->count();
 
         // Build query with relationships
@@ -51,14 +51,14 @@ class ProductController extends Controller
             $query->where('category_id', $request->input('category_id'));
         }
 
-        // 3. Filter by Status
+        // 3. Filter by Status (per-product low-stock threshold)
         if ($request->filled('status')) {
             $status = $request->input('status');
             if ($status === 'in_stock') {
-                $query->where('stock_quantity', '>', 10);
+                $query->whereColumn('stock_quantity', '>', 'low_stock_threshold');
             } elseif ($status === 'low_stock') {
                 $query->where('stock_quantity', '>', 0)
-                    ->where('stock_quantity', '<=', 10);
+                    ->whereColumn('stock_quantity', '<=', 'low_stock_threshold');
             } elseif ($status === 'out_of_stock') {
                 $query->where('stock_quantity', '<=', 0);
             }
@@ -133,6 +133,11 @@ class ProductController extends Controller
             // It must be a whole number and cannot be negative.
             'stock_quantity' => 'required|integer|min:0',
 
+            // Low stock threshold is required.
+            // When stock falls to this number (but not zero),
+            // the product reads as Low Stock.
+            'low_stock_threshold' => 'required|integer|min:0',
+
             // Image is optional.
             // If provided, it must be an actual image file
             // (jpg, jpeg, png, or webp) and no larger than 2MB.
@@ -178,6 +183,10 @@ class ProductController extends Controller
 
         // Get the starting/current stock quantity.
         $product->stock_quantity = $request->input('stock_quantity');
+
+
+        // Get the low stock threshold.
+        $product->low_stock_threshold = $request->input('low_stock_threshold');
 
 
         // If the user uploaded a product image, store it in
@@ -306,6 +315,9 @@ class ProductController extends Controller
             // Stock quantity must be a whole number and cannot be negative.
             'stock_quantity' => 'required|integer|min:0',
 
+            // Low stock threshold must be a whole number and cannot be negative.
+            'low_stock_threshold' => 'required|integer|min:0',
+
             // Image is optional on update — the product keeps its
             // current image if no new file is uploaded.
             'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
@@ -338,6 +350,10 @@ class ProductController extends Controller
 
         // Update the stock quantity.
         $product->stock_quantity = $request->input('stock_quantity');
+
+
+        // Update the low stock threshold.
+        $product->low_stock_threshold = $request->input('low_stock_threshold');
 
 
         // If the user uploaded a new image, delete the old one

@@ -70,18 +70,19 @@ class SampleDataSeeder extends Seeder
 
         $cat = fn (string $n) => Category::where('category_name', $n)->firstOrFail();
 
-        // ---- Products: healthy, low (<=10), and out-of-stock ----
+        // ---- Products: healthy, low (at/below their own threshold), and out-of-stock ----
         $products = [
-            ['iPhone 13 OLED Screen', 'SCR-IP13-001', 'Audio', 1800, 2500, 15],
-            ['Samsung A54 Battery', 'BAT-SA54-002', 'Batteries', 450, 750, 8],
-            ['65W Fast Charger', 'CHR-65W-003', 'Chargers & Cables', 300, 550, 25],
-            ['Type-C Braided Cable 1m', 'CBL-TC1M-004', 'Chargers & Cables', 80, 150, 4],
-            ['Clear Case iPhone 14', 'CAS-IP14-005', 'Cases & Covers', 120, 220, 0],
-            ['Tempered Glass iPhone 13', 'GLS-IP13-006', 'Screen Protectors', 40, 99, 60],
-            ['Wireless Earbuds Pro', 'AUD-TWS-007', 'Audio', 900, 1499, 6],
-            ['Charging Port Flex (Generic)', 'PRT-FLEX-008', 'Batteries', 200, 350, 12],
+            // name, sku, category, cost, sell, stock, low-stock threshold
+            ['iPhone 13 OLED Screen', 'SCR-IP13-001', 'Audio', 1800, 2500, 15, 10],
+            ['Samsung A54 Battery', 'BAT-SA54-002', 'Batteries', 450, 750, 8, 10],
+            ['65W Fast Charger', 'CHR-65W-003', 'Chargers & Cables', 300, 550, 25, 10],
+            ['Type-C Braided Cable 1m', 'CBL-TC1M-004', 'Chargers & Cables', 80, 150, 4, 10],
+            ['Clear Case iPhone 14', 'CAS-IP14-005', 'Cases & Covers', 120, 220, 0, 10],
+            ['Tempered Glass iPhone 13', 'GLS-IP13-006', 'Screen Protectors', 40, 99, 60, 20],
+            ['Wireless Earbuds Pro', 'AUD-TWS-007', 'Audio', 900, 1499, 6, 10],
+            ['Charging Port Flex (Generic)', 'PRT-FLEX-008', 'Batteries', 200, 350, 12, 10],
         ];
-        foreach ($products as [$name, $sku, $category, $cost, $sell, $stock]) {
+        foreach ($products as [$name, $sku, $category, $cost, $sell, $stock, $threshold]) {
             Product::updateOrCreate(
                 ['sku' => $sku],
                 [
@@ -91,6 +92,7 @@ class SampleDataSeeder extends Seeder
                     'cost_price' => $cost,
                     'sell_price' => $sell,
                     'stock_quantity' => $stock,
+                    'low_stock_threshold' => $threshold,
                     'image_path' => null,
                 ]
             );

@@ -504,6 +504,7 @@ td {
     font-weight: 600;
     background: var(--badge-repair);
     color: var(--badge-repair-text);
+    white-space: nowrap;
 }
 
 .stock-cell {
@@ -525,6 +526,7 @@ td {
     border-radius: 20px;
     font-size: 12px;
     font-weight: 600;
+    white-space: nowrap;
 }
 
 .status-badge.in-stock {

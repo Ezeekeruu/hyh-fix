@@ -6,6 +6,7 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Models\RepairTicket;
 use App\Models\Sale;
+use App\Models\Supplier;
 use App\Models\User;
 use Database\Seeders\SampleDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -196,6 +197,76 @@ class RoleAuthTest extends TestCase
         $response->assertSee('/repair-management?status=pending', false);
     }
 
+    public function test_sales_overview_has_trajectory_and_insights(): void
+    {
+        $this->seed(SampleDataSeeder::class);
+        $admin = User::where('email', 'test@example.com')->firstOrFail();
+
+        $response = $this->actingAs($admin)->get('/dashboard');
+        $response->assertOk();
+        $response->assertSee('Total Revenue Trajectory', false);
+        $response->assertSee('Peak Operational Day', false);
+        $response->assertSee('Top Grossing Category', false);
+        $response->assertSee('Retail Conversion Rate', false);
+        // Seeded demo: Audio (₱1,499) out-grosses every other category.
+        $response->assertSee('Audio', false);
+        // Both seeded repair clients (Juan, Maria) also bought retail.
+        $response->assertSee('100.0% (of repair clients)', false);
+
+        $staff = $this->makeUser('staff');
+        $this->actingAs($staff)->get('/staff/dashboard')->assertOk();
+    }
+
+    public function test_admin_dashboard_shows_staff_performance(): void
+    {
+        $this->seed(SampleDataSeeder::class);
+        $admin = User::where('email', 'test@example.com')->firstOrFail();
+
+        $response = $this->actingAs($admin)->get('/dashboard');
+        $response->assertOk();
+        $response->assertSee('Staff Performance', false);
+        $response->assertSee('Alex Technician', false);
+        $response->assertSee('Revenue Generated', false);
+
+        // Role filter keeps matching staff, drops the rest.
+        $filtered = $this->actingAs($admin)->get('/dashboard?staff_role=staff');
+        $filtered->assertOk();
+        $filtered->assertSee('Alex Technician', false);
+        $filtered->assertSee('Casey Clerk', false);
+
+        $adminOnly = $this->actingAs($admin)->get('/dashboard?staff_role=admin');
+        $adminOnly->assertOk();
+        $adminOnly->assertSee('Sonayah Faisal', false);
+        $adminOnly->assertDontSee('Alex Technician', false);
+        $adminOnly->assertDontSee('Casey Clerk', false);
+
+        // Staff never sees peer performance.
+        $staff = $this->makeUser('staff');
+        $this->actingAs($staff)->get('/staff/dashboard')->assertDontSee('Staff Performance', false);
+    }
+
+    public function test_recent_transactions_actions_link_correctly(): void
+    {
+        $this->seed(SampleDataSeeder::class);
+        $admin = User::where('email', 'test@example.com')->firstOrFail();
+        $sale = Sale::where('status', 'completed')->firstOrFail();
+        $ticket = RepairTicket::whereIn('status', ['completed', 'in_progress'])->firstOrFail();
+
+        $response = $this->actingAs($admin)->get('/dashboard');
+        $response->assertOk();
+        // Retail rows: receipt view + direct print link.
+        $response->assertSee('/sales/'.$sale->id, false);
+        $response->assertSee('/sales/'.$sale->id.'?print=1', false);
+        // Repair rows: ticket detail instead of a dead icon.
+        $response->assertSee('/repair-management/'.$ticket->id, false);
+        $response->assertSee('View ticket', false);
+
+        // Print link renders a receipt that auto-prints.
+        $receipt = $this->actingAs($admin)->get('/sales/'.$sale->id.'?print=1');
+        $receipt->assertOk();
+        $receipt->assertSee("addEventListener('load'", false);
+    }
+
     public function test_master_data_modules_are_admin_only(): void
     {
         $staff = $this->makeUser('staff');
@@ -324,5 +395,65 @@ class RoleAuthTest extends TestCase
         $response->assertRedirect('/user-management/'.$admin->id.'/edit');
         $response->assertSessionHasErrors('status');
         $this->assertDatabaseMissing('users', ['id' => $admin->id, 'status' => 'inactive']);
+    }
+
+    public function test_product_store_saves_low_stock_threshold(): void
+    {
+        $admin = $this->makeUser('admin');
+        $category = Category::create(['category_name' => 'QA Cat']);
+        $supplier = Supplier::create(['supplier_name' => 'QA Sup', 'contact_info' => 'QA Contact', 'location' => 'QA Location']);
+
+        $response = $this->actingAs($admin)->post('/inventory', [
+            'product_name' => 'QA Widget',
+            'sku' => 'QA-TH-001',
+            'category_id' => $category->id,
+            'supplier_id' => $supplier->id,
+            'cost_price' => 100,
+            'sell_price' => 130,
+            'stock_quantity' => 25,
+            'low_stock_threshold' => 5,
+        ]);
+
+        $response->assertRedirect('/inventory/add');
+        $this->assertDatabaseHas('products', ['sku' => 'QA-TH-001', 'low_stock_threshold' => 5]);
+    }
+
+    public function test_low_stock_status_uses_per_product_threshold(): void
+    {
+        $admin = $this->makeUser('admin');
+        $category = Category::create(['category_name' => 'QA Cat']);
+        $supplier = Supplier::create(['supplier_name' => 'QA Sup', 'contact_info' => 'QA Contact', 'location' => 'QA Location']);
+
+        // Same stock, different thresholds: only the custom one reads Low Stock.
+        Product::create([
+            'product_name' => 'Custom Low',
+            'sku' => 'QA-TH-002',
+            'category_id' => $category->id,
+            'supplier_id' => $supplier->id,
+            'cost_price' => 10,
+            'sell_price' => 13,
+            'stock_quantity' => 15,
+            'low_stock_threshold' => 20,
+        ]);
+        Product::create([
+            'product_name' => 'Normal Stock',
+            'sku' => 'QA-TH-003',
+            'category_id' => $category->id,
+            'supplier_id' => $supplier->id,
+            'cost_price' => 10,
+            'sell_price' => 13,
+            'stock_quantity' => 15,
+            'low_stock_threshold' => 10,
+        ]);
+
+        $low = $this->actingAs($admin)->get('/inventory?status=low_stock');
+        $low->assertOk();
+        $low->assertSee('Custom Low', false);
+        $low->assertDontSee('Normal Stock', false);
+
+        $inStock = $this->actingAs($admin)->get('/inventory?status=in_stock');
+        $inStock->assertOk();
+        $inStock->assertSee('Normal Stock', false);
+        $inStock->assertDontSee('Custom Low', false);
     }
 }

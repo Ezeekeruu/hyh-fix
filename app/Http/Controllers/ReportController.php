@@ -15,12 +15,9 @@ use Barryvdh\DomPDF\Facade\Pdf;
 class ReportController extends Controller
 {
     /**
-     * Stock rules used for the Inventory Status panel.
-     * Keep these identical to the ones used on the Inventory page.
-     */
-    private const LOW_STOCK_THRESHOLD = 10;
-
-    /**
+     * Stock status uses each product's own low_stock_threshold column
+     * (same rule as the Inventory page).
+     *
      * A product that is in stock and sold LESS THAN OR EQUAL to this many units
      * in the selected period is "Slow Moving". Sold 0 = "Dead Stock".
      */
@@ -164,9 +161,9 @@ class ReportController extends Controller
         */
 
         $totalProducts = Product::count();
-        $inStock       = Product::where('stock_quantity', '>', self::LOW_STOCK_THRESHOLD)->count();
+        $inStock       = Product::whereColumn('stock_quantity', '>', 'low_stock_threshold')->count();
         $lowStock      = Product::where('stock_quantity', '>', 0)
-            ->where('stock_quantity', '<=', self::LOW_STOCK_THRESHOLD)
+            ->whereColumn('stock_quantity', '<=', 'low_stock_threshold')
             ->count();
         $outOfStock    = Product::where('stock_quantity', '<=', 0)->count();
 

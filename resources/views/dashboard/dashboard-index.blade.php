@@ -202,11 +202,11 @@
                     <div class="analytics-header">
                         <div>
                             <div class="title-row">
-                                <h2>Sales Overview & Revenue</h2>
+                                <h2>Sales Overview</h2>
                             </div>
 
                             <p>
-                                Accumulated revenue this week
+                                Sales comparison of repairs and accessories
                             </p>
                         </div>
 
@@ -227,6 +227,11 @@
                             <span class="dot blue"></span>
                             Device Accessories
                         </div>
+
+                        <div class="legend-item">
+                            <span class="dot line"></span>
+                            Total Revenue Trajectory
+                        </div>
                     </div>
 
                     <!-- CHART: retail vs repair revenue (Chart.js) -->
@@ -236,23 +241,34 @@
                     <div class="analytics-bottom">
                         <div class="metric-card">
                             <div class="metric-icon">
-                                <i class="fa-solid fa-mobile-screen"></i>
+                                <i class="fa-regular fa-calendar"></i>
                             </div>
 
                             <div>
-                                <span>Top Repair Service</span>
-                                <h4>{{ $topRepairService ?? '—' }}</h4>
+                                <span>Peak Operational Day</span>
+                                <h4>{{ $insights['peakDay'] ? $insights['peakDay']['day'] . ' (₱' . number_format($insights['peakDay']['revenue'], 2) . ')' : '—' }}</h4>
                             </div>
                         </div>
 
                         <div class="metric-card">
                             <div class="metric-icon">
-                                <i class="fa-solid fa-plug-circle-bolt"></i>
+                                <i class="fa-solid fa-tags"></i>
                             </div>
 
                             <div>
-                                <span>Top Retail Accessory</span>
-                                <h4>{{ $topRetailProduct ?? '—' }}</h4>
+                                <span>Top Grossing Category</span>
+                                <h4>{{ $insights['topCategory'] ? $insights['topCategory']['name'] . ' (₱' . number_format($insights['topCategory']['revenue'], 2) . ')' : '—' }}</h4>
+                            </div>
+                        </div>
+
+                        <div class="metric-card">
+                            <div class="metric-icon">
+                                <i class="fa-solid fa-bag-shopping"></i>
+                            </div>
+
+                            <div>
+                                <span>Retail Conversion Rate</span>
+                                <h4>{{ number_format($insights['conversion'], 1) }}% (of repair clients)</h4>
                             </div>
                         </div>
                     </div>
@@ -267,7 +283,7 @@
 
                     <div class="stock-list">
                         @php
-                        $lowStockProducts = \App\Models\Product::where('stock_quantity', '<=', 10)
+                        $lowStockProducts = \App\Models\Product::whereColumn('stock_quantity', '<=', 'low_stock_threshold')
                             ->orderBy('stock_quantity')
                             ->get();
                             @endphp
@@ -389,10 +405,11 @@
                                     <div class="actions">
                                         @if($t->type === 'Retail')
                                         <a href="{{ url('/sales/' . $t->record_id) }}" title="View receipt"><i class="fa-regular fa-file-lines"></i></a>
+                                        <a href="{{ url('/sales/' . $t->record_id) }}?print=1" title="Print receipt"><i class="fa-solid fa-print"></i></a>
                                         @else
-                                        <i class="fa-regular fa-file-lines" style="opacity:.4" title="No receipt view for repairs"></i>
+                                        <a href="{{ url('/repair-management/' . $t->record_id) }}" title="View ticket"><i class="fa-regular fa-file-lines"></i></a>
+                                        <i class="fa-solid fa-print" style="opacity:.4" title="No receipt for repairs"></i>
                                         @endif
-                                        <i class="fa-solid fa-print"></i>
                                     </div>
                                 </td>
                             </tr>
@@ -429,6 +446,74 @@
                     out of <strong>{{ $transactions->total() }}</strong> transactions
                 </div>
             </section>
+
+            <!-- Staff Performance -->
+            <section class="transactions-card" id="staff-performance">
+                <div class="transactions-header">
+                    <div>
+                        <h2>Staff Performance</h2>
+
+                        <p>
+                            Individual productivity and total revenue contribution
+                        </p>
+                    </div>
+
+                    <form action="{{ url('/dashboard') }}#staff-performance" method="GET" class="filters" style="width: auto;">
+                        <div class="filter-dropdown">
+                            <select name="staff_role" onchange="this.form.submit()">
+                                <option value="all" {{ $staffRole === 'all' ? 'selected' : '' }}>Role: All</option>
+                                <option value="admin" {{ $staffRole === 'admin' ? 'selected' : '' }}>Admin</option>
+                                <option value="staff" {{ $staffRole === 'staff' ? 'selected' : '' }}>Staff</option>
+                            </select>
+                        </div>
+                    </form>
+
+                </div>
+
+                <!-- Table -->
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Role</th>
+                                <th>Repairs Completed</th>
+                                <th>Sales</th>
+                                <th>Revenue Generated</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            @forelse($staffPerformance as $staff)
+                            <tr>
+                                <td>
+                                    <div style="display:flex; align-items:center; gap:12px;">
+                                        <div style="width:38px; height:38px; border-radius:50%; background:#e0e7ff; color:#3730a3; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px; flex-shrink:0;">
+                                            {{ collect(explode(' ', trim($staff->name)))->filter()->map(fn ($p) => strtoupper(substr($p, 0, 1)))->take(2)->join('') }}
+                                        </div>
+                                        <div style="font-weight:600;">{{ $staff->name }}</div>
+                                    </div>
+                                </td>
+
+                                <td>
+                                    <span style="display:inline-block; padding:5px 12px; border-radius:999px; font-size:12px; font-weight:600; background:{{ $staff->role === 'admin' ? '#e0e7ff; color:#3730a3;' : '#dcfce7; color:#15803d;' }}">
+                                        {{ $staff->roleLabel() }}
+                                    </span>
+                                </td>
+
+                                <td>{{ $staff->completed_repairs_count }} device{{ $staff->completed_repairs_count == 1 ? '' : 's' }}</td>
+                                <td>{{ $staff->completed_sales_count }} sale{{ $staff->completed_sales_count == 1 ? '' : 's' }}</td>
+                                <td>₱{{ number_format($staff->revenue_generated, 2) }}</td>
+                            </tr>
+                            @empty
+                            <tr>
+                                <td colspan="5">No staff activity found.</td>
+                            </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </section>
         </main>
     </div>
 
@@ -462,30 +547,84 @@
             var el = document.getElementById('salesChart');
             if (!el || typeof Chart === 'undefined') return;
             var series = @json($chart);
+            function money(v) {
+                return '₱' + Number(v).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            }
+            function rangeData(r) {
+                return {
+                    labels: r.labels,
+                    datasets: [
+                        { type: 'bar', label: 'Repair Services', data: r.repair, backgroundColor: '#1e293b', borderRadius: 6, order: 2 },
+                        { type: 'bar', label: 'Device Accessories', data: r.retail, backgroundColor: '#60a5fa', borderRadius: 6, order: 2 },
+                        { type: 'line', label: 'Total Revenue Trajectory', data: r.total, borderColor: '#2563eb', backgroundColor: '#2563eb', borderWidth: 2.5, pointRadius: 4, pointHoverRadius: 6, tension: 0.35, order: 1 }
+                    ]
+                };
+            }
             var chart = new Chart(el, {
                 type: 'bar',
-                data: {
-                    labels: series.weekly.labels,
-                    datasets: [
-                        { label: 'Repair Services', data: series.weekly.repair, backgroundColor: '#1e293b', borderRadius: 6 },
-                        { label: 'Device Accessories', data: series.weekly.retail, backgroundColor: '#60a5fa', borderRadius: 6 }
-                    ]
-                },
+                data: rangeData(series.weekly),
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: { y: { beginAtZero: true, ticks: { callback: function (v) { return '₱' + v; } } } }
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                title: function (items) {
+                                    var label = items[0].label;
+                                    var r = chart.$range;
+                                    if (r && r.peakIdx !== null && items[0].dataIndex === r.peakIdx) {
+                                        label += ' (Peak Volume)';
+                                    }
+                                    return label;
+                                },
+                                label: function (ctx) {
+                                    var i = ctx.dataIndex;
+                                    var r = chart.$range;
+                                    if (ctx.datasetIndex === 2) {
+                                        var line = 'Total Rev: ' + money(ctx.parsed.y);
+                                        if (i > 0 && r) {
+                                            var prev = r.total[i - 1] || 0;
+                                            if (prev > 0) {
+                                                var pct = Math.round(((r.total[i] - prev) / prev) * 100);
+                                                line += ' (' + (pct >= 0 ? '+' : '') + pct + '% vs prev)';
+                                            }
+                                        }
+                                        return line;
+                                    }
+                                    if (ctx.datasetIndex === 0) {
+                                        return 'Repairs: ' + (r ? r.repairCount[i] : 0) + ' fixed · ' + money(ctx.parsed.y);
+                                    }
+                                    return 'Retail: ' + (r ? r.retailQty[i] : 0) + ' items · ' + money(ctx.parsed.y);
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, ticks: { callback: function (v) { return '₱' + v; } } },
+                        x: {
+                            ticks: {
+                                color: function (c) {
+                                    var label = c.tick.label || '';
+                                    return label.indexOf('(Peak)') !== -1 ? '#1d4ed8' : '#6b7280';
+                                }
+                            }
+                        }
+                    }
                 }
             });
+            chart.$range = series.weekly;
             document.querySelectorAll('.period-tabs button').forEach(function (btn) {
                 btn.addEventListener('click', function () {
                     document.querySelectorAll('.period-tabs button').forEach(function (b) { b.classList.remove('active'); });
                     btn.classList.add('active');
                     var r = series[btn.getAttribute('data-range')] || series.weekly;
+                    chart.$range = r;
                     chart.data.labels = r.labels;
                     chart.data.datasets[0].data = r.repair;
                     chart.data.datasets[1].data = r.retail;
+                    chart.data.datasets[2].data = r.total;
                     chart.update();
                 });
             });

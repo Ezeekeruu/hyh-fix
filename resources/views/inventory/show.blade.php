@@ -172,6 +172,10 @@
                                     <td style="font-weight: 700;">Stock Quantity</td>
                                     <td>{{ $product->stock_quantity }}</td>
                                 </tr>
+                                <tr>
+                                    <td style="font-weight: 700;">Low Stock Threshold</td>
+                                    <td>{{ $product->low_stock_threshold }}</td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>

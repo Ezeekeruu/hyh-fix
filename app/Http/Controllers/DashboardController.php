@@ -8,13 +8,13 @@ use App\Models\Product;
 use App\Models\RepairTicket;
 use App\Models\Sale;
 use App\Models\SaleItem;
+use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
-    private const LOW_STOCK_THRESHOLD = 10;
     private const PER_PAGE = 10;
 
     public function index(Request $request)
@@ -57,28 +57,60 @@ class DashboardController extends Controller
             ->sum('final_price');
 
         $todaySales    = $salesToday + $repairsToday;
-        $lowStockCount = Product::where('stock_quantity', '<=', self::LOW_STOCK_THRESHOLD)->count();
+        $lowStockCount = Product::whereColumn('stock_quantity', '<=', 'low_stock_threshold')->count();
 
-        // ---- Sales Overview chart (Chart.js): retail vs repair revenue ----
+        // ---- Sales Overview chart (Chart.js): retail vs repair bars + total line ----
         $chart = [
             'daily'   => $this->revenueSeries(Carbon::today()->subDays(6), Carbon::today()->endOfDay(), 'day'),
             'weekly'  => $this->revenueSeries(Carbon::now()->subWeeks(7)->startOfWeek(), Carbon::now()->endOfWeek(), 'week'),
             'monthly' => $this->revenueSeries(Carbon::now()->subMonths(5)->startOfMonth(), Carbon::now()->endOfMonth(), 'month'),
         ];
 
-        $topRepairService = RepairTicket::whereNotNull('service_type')
-            ->groupBy('service_type')
-            ->selectRaw('service_type, COUNT(*) as c')
-            ->orderByDesc('c')
-            ->value('service_type');
+        // ---- Bottom insight cards (trailing 8 weeks, same window as the chart) ----
+        $insights = $this->salesInsights(
+            Carbon::now()->subWeeks(7)->startOfWeek(),
+            Carbon::now()->endOfWeek()
+        );
 
-        $topRetailId = SaleItem::join('sales', 'sale_items.sale_id', '=', 'sales.id')
-            ->where('sales.status', 'completed')
-            ->groupBy('sale_items.product_id')
-            ->selectRaw('sale_items.product_id, SUM(sale_items.quantity) as q')
-            ->orderByDesc('q')
-            ->value('sale_items.product_id');
-        $topRetailProduct = $topRetailId ? Product::find($topRetailId)?->product_name : null;
+        // ---- Staff performance table (admin dashboard; same trailing window) ----
+        $periodStart = Carbon::now()->subWeeks(7)->startOfWeek();
+        $periodEnd = Carbon::now()->endOfWeek();
+
+        $staffPerformance = User::withCount([
+            'sales as completed_sales_count' => function ($q) use ($periodStart, $periodEnd) {
+                $q->where('status', 'completed')
+                    ->whereBetween('sale_date', [$periodStart, $periodEnd]);
+            },
+            'assignedRepairTickets as completed_repairs_count' => function ($q) use ($periodStart, $periodEnd) {
+                $q->where('status', 'completed')
+                    ->whereBetween('date_completed', [$periodStart, $periodEnd]);
+            },
+        ])
+            ->get()
+            ->map(function ($user) use ($periodStart, $periodEnd) {
+                $salesRevenue = $user->sales()
+                    ->where('status', 'completed')
+                    ->whereBetween('sale_date', [$periodStart, $periodEnd])
+                    ->sum('total_amount');
+
+                $repairRevenue = $user->assignedRepairTickets()
+                    ->where('status', 'completed')
+                    ->whereBetween('date_completed', [$periodStart, $periodEnd])
+                    ->sum('final_price');
+
+                $user->revenue_generated = (float) $salesRevenue + (float) $repairRevenue;
+
+                return $user;
+            })
+            ->sortByDesc('revenue_generated')
+            ->values();
+
+        $staffRole = $request->query('staff_role', 'all');
+        if (in_array($staffRole, ['admin', 'staff'], true)) {
+            $staffPerformance = $staffPerformance->where('role', $staffRole)->values();
+        } else {
+            $staffRole = 'all';
+        }
 
         // ---- Transactions: Retail (sales) UNION Repair (repair_tickets) ----
         // Both SELECTs must have the same columns in the same order.
@@ -177,16 +209,17 @@ class DashboardController extends Controller
             'lowStockCount'     => $lowStockCount,
             'transactions'      => $transactions,
             'chart'             => $chart,
-            'topRepairService'  => $topRepairService,
-            'topRetailProduct'  => $topRetailProduct,
+            'insights'          => $insights,
+            'staffPerformance'  => $staffPerformance,
+            'staffRole'         => $staffRole,
         ];
     }
 
     /**
-     * Retail vs repair revenue buckets for the Sales Overview chart.
-     * Groups by day in SQL (works on MySQL + SQLite), buckets in PHP.
+     * Bottom insight cards for the Sales Overview panel, computed over the
+     * given window with portable queries (same DATE() grouping as above).
      */
-    private function revenueSeries(Carbon $start, Carbon $end, string $bucket): array
+    private function salesInsights(Carbon $start, Carbon $end): array
     {
         $sales = DB::table('sales')
             ->where('status', 'completed')
@@ -201,6 +234,96 @@ class DashboardController extends Controller
             ->groupBy(DB::raw('DATE(date_completed)'))
             ->selectRaw('DATE(date_completed) as d, SUM(final_price) as total')
             ->pluck('total', 'd');
+
+        // Peak operational weekday by combined revenue.
+        $byWeekday = [];
+        foreach ($sales as $day => $total) {
+            $dow = Carbon::parse($day)->format('l');
+            $byWeekday[$dow] = ($byWeekday[$dow] ?? 0) + (float) $total;
+        }
+        foreach ($repairs as $day => $total) {
+            $dow = Carbon::parse($day)->format('l');
+            $byWeekday[$dow] = ($byWeekday[$dow] ?? 0) + (float) $total;
+        }
+        $peakDay = null;
+        if ($byWeekday && max($byWeekday) > 0) {
+            $name = array_search(max($byWeekday), $byWeekday, true);
+            $peakDay = ['day' => $name.'s', 'revenue' => round(max($byWeekday), 2)];
+        }
+
+        // Top grossing retail category by revenue.
+        $topCategory = SaleItem::join('sales', 'sale_items.sale_id', '=', 'sales.id')
+            ->join('products', 'sale_items.product_id', '=', 'products.id')
+            ->join('categories', 'products.category_id', '=', 'categories.id')
+            ->where('sales.status', 'completed')
+            ->whereBetween('sales.sale_date', [$start, $end])
+            ->groupBy('categories.id', 'categories.category_name')
+            ->selectRaw('categories.category_name as name, SUM(sale_items.quantity * sale_items.unit_price) as revenue')
+            ->orderByDesc('revenue')
+            ->first();
+
+        // Retail conversion: repair customers in window who also bought retail.
+        $repairCustomers = RepairTicket::join('devices', 'devices.id', '=', 'repair_tickets.device_id')
+            ->where('repair_tickets.status', 'completed')
+            ->whereBetween('repair_tickets.date_completed', [$start, $end])
+            ->distinct()
+            ->pluck('devices.customer_id')
+            ->filter()
+            ->unique()
+            ->values();
+        $buyers = Sale::where('status', 'completed')
+            ->whereBetween('sale_date', [$start, $end])
+            ->whereNotNull('customer_id')
+            ->distinct()
+            ->pluck('customer_id')
+            ->unique();
+        $conversion = $repairCustomers->isNotEmpty()
+            ? round(100 * $repairCustomers->intersect($buyers)->count() / $repairCustomers->count(), 1)
+            : 0.0;
+
+        return [
+            'peakDay' => $peakDay,
+            'topCategory' => $topCategory ? [
+                'name' => $topCategory->name,
+                'revenue' => round((float) $topCategory->revenue, 2),
+            ] : null,
+            'conversion' => $conversion,
+        ];
+    }
+
+    /**
+     * Revenue buckets for the Sales Overview chart, with per-bucket totals,
+     * completed-repair counts, retail units sold, and the peak bucket index.
+     * Groups by day in SQL (works on MySQL + SQLite + Postgres), buckets in PHP.
+     */
+    private function revenueSeries(Carbon $start, Carbon $end, string $bucket): array
+    {
+        $sales = DB::table('sales')
+            ->where('status', 'completed')
+            ->whereBetween('sale_date', [$start, $end])
+            ->groupBy(DB::raw('DATE(sale_date)'))
+            ->selectRaw('DATE(sale_date) as d, SUM(total_amount) as total')
+            ->pluck('total', 'd');
+
+        $saleQty = SaleItem::join('sales', 'sale_items.sale_id', '=', 'sales.id')
+            ->where('sales.status', 'completed')
+            ->whereBetween('sales.sale_date', [$start, $end])
+            ->groupBy(DB::raw('DATE(sales.sale_date)'))
+            ->selectRaw('DATE(sales.sale_date) as d, SUM(sale_items.quantity) as q')
+            ->pluck('q', 'd');
+
+        $repairs = DB::table('repair_tickets')
+            ->where('status', 'completed')
+            ->whereBetween('date_completed', [$start, $end])
+            ->groupBy(DB::raw('DATE(date_completed)'))
+            ->selectRaw('DATE(date_completed) as d, SUM(final_price) as total, COUNT(*) as c')
+            ->get();
+        $repairSums = [];
+        $repairCounts = [];
+        foreach ($repairs as $row) {
+            $repairSums[$row->d] = (float) $row->total;
+            $repairCounts[$row->d] = (int) $row->c;
+        }
 
         $agg = [];
         $cursor = $start->copy()->startOfDay();
@@ -217,17 +340,34 @@ class DashboardController extends Controller
                 $label = $cursor->format('D');
             }
 
-            $agg[$key] ??= ['label' => $label, 'retail' => 0.0, 'repair' => 0.0];
+            $agg[$key] ??= ['label' => $label, 'retail' => 0.0, 'repair' => 0.0, 'retailQty' => 0, 'repairCount' => 0];
             $day = $cursor->toDateString();
             $agg[$key]['retail'] += (float) ($sales[$day] ?? 0);
-            $agg[$key]['repair'] += (float) ($repairs[$day] ?? 0);
+            $agg[$key]['repair'] += $repairSums[$day] ?? 0;
+            $agg[$key]['retailQty'] += (int) ($saleQty[$day] ?? 0);
+            $agg[$key]['repairCount'] += $repairCounts[$day] ?? 0;
             $cursor->addDay();
         }
 
+        $rows = array_values($agg);
+        $totals = [];
+        foreach ($rows as $b) {
+            $totals[] = round($b['retail'] + $b['repair'], 2);
+        }
+        $peakIdx = null;
+        if ($totals && max($totals) > 0) {
+            $peakIdx = array_search(max($totals), $totals, true);
+            $rows[$peakIdx]['label'] .= ' (Peak)';
+        }
+
         return [
-            'labels' => array_column($agg, 'label'),
-            'retail' => array_map(fn ($b) => round($b['retail'], 2), array_values($agg)),
-            'repair' => array_map(fn ($b) => round($b['repair'], 2), array_values($agg)),
+            'labels' => array_column($rows, 'label'),
+            'retail' => array_map(fn ($b) => round($b['retail'], 2), $rows),
+            'repair' => array_map(fn ($b) => round($b['repair'], 2), $rows),
+            'total' => $totals,
+            'retailQty' => array_map(fn ($b) => (int) $b['retailQty'], $rows),
+            'repairCount' => array_map(fn ($b) => (int) $b['repairCount'], $rows),
+            'peakIdx' => $peakIdx,
         ];
     }
 }

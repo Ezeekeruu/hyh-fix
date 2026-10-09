@@ -236,6 +236,12 @@
 
     </div>
 
+    @if(request('print'))
+    <script>
+        window.addEventListener('load', function () { window.print(); });
+    </script>
+    @endif
+
 </body>
 
 </html>
