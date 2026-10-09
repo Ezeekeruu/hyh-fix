@@ -85,6 +85,21 @@ body {
     display: flex;
     flex-direction: column;
     gap: 8px;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+}
+
+/* sidebar-nav-scroll: slim scrollbar so a tall grouped nav never clips. */
+.sidebar-nav::-webkit-scrollbar {
+    width: 6px;
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.18);
+    border-radius: 3px;
 }
 
 .nav-link {

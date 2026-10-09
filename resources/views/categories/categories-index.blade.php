@@ -144,7 +144,7 @@
                 @endif
 
                 <div class="inventory-actions-bar">
-                    <div class="master-count"><strong>{{ $categories->count() }}</strong> categories</div>
+                    <div class="master-count"><strong>{{ $categories->total() }}</strong> categories</div>
 
                     <a href="{{ route('categories.create') }}" class="btn-add-product" style="margin-left: auto; text-decoration: none;">
                         <i class="fa-solid fa-plus"></i>
@@ -184,6 +184,45 @@
                             @endforelse
                         </tbody>
                     </table>
+                </div>
+
+                <!-- Table Footer / Pagination -->
+                <div class="table-footer">
+                    <div class="pagination-info">
+                        Showing <span>{{ $categories->firstItem() ?? 0 }}</span>-<span>{{ $categories->lastItem() ?? 0 }}</span> of <span>{{ $categories->total() }}</span> categories
+                    </div>
+
+                    <div class="pagination">
+                        @if ($categories->onFirstPage())
+                        <button class="page-btn prev" disabled style="opacity: 0.5; cursor: not-allowed;">
+                            <i class="fa-solid fa-chevron-left"></i>
+                        </button>
+                        @else
+                        <a href="{{ $categories->previousPageUrl() }}" class="page-btn prev">
+                            <i class="fa-solid fa-chevron-left"></i>
+                        </a>
+                        @endif
+
+                        <div class="page-numbers">
+                            @foreach ($categories->getUrlRange(1, $categories->lastPage()) as $page => $url)
+                            @if ($page == $categories->currentPage())
+                            <span class="page-btn active">{{ $page }}</span>
+                            @else
+                            <a href="{{ $url }}" class="page-btn" style="text-decoration: none;">{{ $page }}</a>
+                            @endif
+                            @endforeach
+                        </div>
+
+                        @if ($categories->hasMorePages())
+                        <a href="{{ $categories->nextPageUrl() }}" class="page-btn next">
+                            <i class="fa-solid fa-chevron-right"></i>
+                        </a>
+                        @else
+                        <button class="page-btn next" disabled style="opacity: 0.5; cursor: not-allowed;">
+                            <i class="fa-solid fa-chevron-right"></i>
+                        </button>
+                        @endif
+                    </div>
                 </div>
             </section>
         </main>

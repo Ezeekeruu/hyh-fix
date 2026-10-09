@@ -6,6 +6,7 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Models\RepairTicket;
 use App\Models\Sale;
+use App\Models\ServiceType;
 use App\Models\Supplier;
 use App\Models\User;
 use Database\Seeders\SampleDataSeeder;
@@ -455,5 +456,35 @@ class RoleAuthTest extends TestCase
         $inStock->assertOk();
         $inStock->assertSee('Normal Stock', false);
         $inStock->assertDontSee('Custom Low', false);
+    }
+
+    public function test_master_data_lists_paginate(): void
+    {
+        $admin = $this->makeUser('admin');
+
+        for ($i = 1; $i <= 12; $i++) {
+            Category::create(['category_name' => 'QA Cat '.str_pad((string) $i, 2, '0', STR_PAD_LEFT)]);
+            Supplier::create([
+                'supplier_name' => 'QA Sup '.str_pad((string) $i, 2, '0', STR_PAD_LEFT),
+                'contact_info' => 'QA Contact',
+                'location' => 'QA Location',
+            ]);
+            ServiceType::create(['name' => 'QA Svc '.str_pad((string) $i, 2, '0', STR_PAD_LEFT)]);
+        }
+
+        foreach ([
+            ['/categories', 'QA Cat 01', 'QA Cat 11'],
+            ['/suppliers', 'QA Sup 01', 'QA Sup 11'],
+            ['/service-types', 'QA Svc 01', 'QA Svc 11'],
+        ] as [$url, $firstPage, $secondPage]) {
+            $page1 = $this->actingAs($admin)->get($url);
+            $page1->assertOk();
+            $page1->assertSee($firstPage, false);
+            $page1->assertDontSee($secondPage, false);
+
+            $page2 = $this->actingAs($admin)->get($url.'?page=2');
+            $page2->assertOk();
+            $page2->assertSee($secondPage, false);
+        }
     }
 }

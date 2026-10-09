@@ -144,7 +144,7 @@
                 @endif
 
                 <div class="inventory-actions-bar">
-                    <div class="master-count"><strong>{{ $serviceTypes->count() }}</strong> service types</div>
+                    <div class="master-count"><strong>{{ $serviceTypes->total() }}</strong> service types</div>
 
                     <a href="{{ route('service-types.create') }}" class="btn-add-product" style="margin-left: auto; text-decoration: none;">
                         <i class="fa-solid fa-plus"></i>
@@ -184,6 +184,45 @@
                             @endforelse
                         </tbody>
                     </table>
+                </div>
+
+                <!-- Table Footer / Pagination -->
+                <div class="table-footer">
+                    <div class="pagination-info">
+                        Showing <span>{{ $serviceTypes->firstItem() ?? 0 }}</span>-<span>{{ $serviceTypes->lastItem() ?? 0 }}</span> of <span>{{ $serviceTypes->total() }}</span> service types
+                    </div>
+
+                    <div class="pagination">
+                        @if ($serviceTypes->onFirstPage())
+                        <button class="page-btn prev" disabled style="opacity: 0.5; cursor: not-allowed;">
+                            <i class="fa-solid fa-chevron-left"></i>
+                        </button>
+                        @else
+                        <a href="{{ $serviceTypes->previousPageUrl() }}" class="page-btn prev">
+                            <i class="fa-solid fa-chevron-left"></i>
+                        </a>
+                        @endif
+
+                        <div class="page-numbers">
+                            @foreach ($serviceTypes->getUrlRange(1, $serviceTypes->lastPage()) as $page => $url)
+                            @if ($page == $serviceTypes->currentPage())
+                            <span class="page-btn active">{{ $page }}</span>
+                            @else
+                            <a href="{{ $url }}" class="page-btn" style="text-decoration: none;">{{ $page }}</a>
+                            @endif
+                            @endforeach
+                        </div>
+
+                        @if ($serviceTypes->hasMorePages())
+                        <a href="{{ $serviceTypes->nextPageUrl() }}" class="page-btn next">
+                            <i class="fa-solid fa-chevron-right"></i>
+                        </a>
+                        @else
+                        <button class="page-btn next" disabled style="opacity: 0.5; cursor: not-allowed;">
+                            <i class="fa-solid fa-chevron-right"></i>
+                        </button>
+                        @endif
+                    </div>
                 </div>
             </section>
         </main>

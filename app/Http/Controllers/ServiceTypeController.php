@@ -10,7 +10,7 @@ class ServiceTypeController extends Controller
 {
     public function index()
     {
-        $serviceTypes = ServiceType::orderBy('name')->get();
+        $serviceTypes = ServiceType::orderBy('name')->paginate(10);
 
         return view('service-types.service-types-index', [
             'serviceTypes' => $serviceTypes,

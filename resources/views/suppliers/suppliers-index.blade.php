@@ -144,7 +144,7 @@
                 @endif
 
                 <div class="inventory-actions-bar">
-                    <div class="master-count"><strong>{{ $suppliers->count() }}</strong> suppliers</div>
+                    <div class="master-count"><strong>{{ $suppliers->total() }}</strong> suppliers</div>
 
                     <a href="{{ route('suppliers.create') }}" class="btn-add-product" style="margin-left: auto; text-decoration: none;">
                         <i class="fa-solid fa-plus"></i>
@@ -188,6 +188,45 @@
                             @endforelse
                         </tbody>
                     </table>
+                </div>
+
+                <!-- Table Footer / Pagination -->
+                <div class="table-footer">
+                    <div class="pagination-info">
+                        Showing <span>{{ $suppliers->firstItem() ?? 0 }}</span>-<span>{{ $suppliers->lastItem() ?? 0 }}</span> of <span>{{ $suppliers->total() }}</span> suppliers
+                    </div>
+
+                    <div class="pagination">
+                        @if ($suppliers->onFirstPage())
+                        <button class="page-btn prev" disabled style="opacity: 0.5; cursor: not-allowed;">
+                            <i class="fa-solid fa-chevron-left"></i>
+                        </button>
+                        @else
+                        <a href="{{ $suppliers->previousPageUrl() }}" class="page-btn prev">
+                            <i class="fa-solid fa-chevron-left"></i>
+                        </a>
+                        @endif
+
+                        <div class="page-numbers">
+                            @foreach ($suppliers->getUrlRange(1, $suppliers->lastPage()) as $page => $url)
+                            @if ($page == $suppliers->currentPage())
+                            <span class="page-btn active">{{ $page }}</span>
+                            @else
+                            <a href="{{ $url }}" class="page-btn" style="text-decoration: none;">{{ $page }}</a>
+                            @endif
+                            @endforeach
+                        </div>
+
+                        @if ($suppliers->hasMorePages())
+                        <a href="{{ $suppliers->nextPageUrl() }}" class="page-btn next">
+                            <i class="fa-solid fa-chevron-right"></i>
+                        </a>
+                        @else
+                        <button class="page-btn next" disabled style="opacity: 0.5; cursor: not-allowed;">
+                            <i class="fa-solid fa-chevron-right"></i>
+                        </button>
+                        @endif
+                    </div>
                 </div>
             </section>
         </main>
