@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Storage;
 
 class Product extends Model
 {
@@ -26,9 +25,17 @@ class Product extends Model
     ];
 
     // Returns a ready-to-use image URL, or null if no image was uploaded.
+    // Built from config only (never boots the S3 client) so pages render
+    // even when AWS credentials are absent; falls back to local storage.
     public function getImageUrlAttribute()
     {
-        return $this->image_path ? Storage::disk('s3')->url($this->image_path) : null;
+        if (empty($this->image_path)) {
+            return null;
+        }
+
+        $base = rtrim((string) config('filesystems.disks.s3.url'), '/');
+
+        return $base !== '' ? $base.'/'.$this->image_path : asset('storage/'.$this->image_path);
     }
 
     public function category()

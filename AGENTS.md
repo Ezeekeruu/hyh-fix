@@ -18,6 +18,7 @@ Laravel 12 + PHP ^8.2 + Vite 7 + Tailwind v4. No CI, no `opencode.json`, no shar
 
 - `composer test` (`config:clear` + `php artisan test`). Single: `php artisan test --filter=Name` or `php artisan test tests/Feature/FooTest.php`.
 - `vendor/bin/pint --test` to check, `vendor/bin/pint` to fix. No `pint.json` — Laravel defaults.
+- Pint quirk: this pint version false-flags `unary_operator_spaces` / `not_operator_with_successor_space` on `! ` inside CRLF files (pre-existing repo files are CRLF, `write`-created files are LF). Verified by isolation — prefer `empty()` over `! ` when editing CRLF files, and don't chase those two flags there.
 
 ## Auth / roles — session auth is enforced, don't bypass it
 

@@ -515,6 +515,17 @@ class RoleAuthTest extends TestCase
         Storage::disk('s3')->assertExists($product->image_path);
     }
 
+    public function test_image_url_never_fatals_without_s3_config(): void
+    {
+        config()->set('filesystems.disks.s3.url', null);
+
+        $product = new Product(['image_path' => 'products/qa.jpg']);
+
+        // Falls back to local storage instead of booting the S3 client.
+        $this->assertSame(asset('storage/products/qa.jpg'), $product->image_url);
+        $this->assertNull((new Product)->image_url);
+    }
+
     public function test_master_data_lists_search(): void
     {
         $admin = $this->makeUser('admin');

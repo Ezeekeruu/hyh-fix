@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Storage;
 
 class DevicePhoto extends Model
 {
@@ -30,8 +29,16 @@ class DevicePhoto extends Model
     }
 
     // Returns a ready-to-use photo URL, or null if the path is missing.
+    // Built from config only (never boots the S3 client) so pages render
+    // even when AWS credentials are absent; falls back to local storage.
     public function getPhotoUrlAttribute()
     {
-        return $this->photo_path ? Storage::disk('s3')->url($this->photo_path) : null;
+        if (empty($this->photo_path)) {
+            return null;
+        }
+
+        $base = rtrim((string) config('filesystems.disks.s3.url'), '/');
+
+        return $base !== '' ? $base.'/'.$this->photo_path : asset('storage/'.$this->photo_path);
     }
 }
