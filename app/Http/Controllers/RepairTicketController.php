@@ -172,7 +172,7 @@ class RepairTicketController extends Controller
             // 5. Save Intake Photos (if uploaded)
             if ($request->hasFile('photos')) {
                 foreach ($request->file('photos') as $photoFile) {
-                    $path = $photoFile->store('repair-photos', 'public');
+                    $path = $photoFile->store('repair-photos', 's3');
 
                     $photo = new DevicePhoto();
                     $photo->repair_ticket_id = $repairTicket->id;

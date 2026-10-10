@@ -138,7 +138,7 @@
                     <div class="form-card-header">
                         <div class="form-card-icon">
                             @if($product->image_path)
-                            <img src="{{ asset('storage/' . $product->image_path) }}" alt="{{ $product->product_name }}" style="width: 40px; height: 40px; object-fit: cover; border-radius: 10px;">
+                            <img src="{{ $product->image_url }}" alt="{{ $product->product_name }}" style="width: 40px; height: 40px; object-fit: cover; border-radius: 10px;">
                             @else
                             <i class="fa-solid fa-box"></i>
                             @endif

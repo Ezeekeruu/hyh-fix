@@ -241,8 +241,8 @@
 
                 <div style="display: flex; gap: 12px; flex-wrap: wrap; padding: 4px 2px;">
                     @foreach($repairTicket->photos as $photo)
-                    <a href="{{ asset('storage/' . $photo->photo_path) }}" target="_blank" title="Uploaded by {{ $photo->uploadedBy?->name ?? 'staff' }}">
-                        <img src="{{ asset('storage/' . $photo->photo_path) }}" alt="Repair photo" style="width: 140px; height: 140px; object-fit: cover; border-radius: 10px; border: 1px solid var(--border-color);">
+                    <a href="{{ $photo->photo_url }}" target="_blank" title="Uploaded by {{ $photo->uploadedBy?->name ?? 'staff' }}">
+                        <img src="{{ $photo->photo_url }}" alt="Repair photo" style="width: 140px; height: 140px; object-fit: cover; border-radius: 10px; border: 1px solid var(--border-color);">
                     </a>
                     @endforeach
                 </div>

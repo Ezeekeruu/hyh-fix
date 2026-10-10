@@ -210,7 +210,7 @@
 
                             <div class="product-image">
                                 @if($product->image_path)
-                                <img src="{{ asset('storage/' . $product->image_path) }}"
+                                <img src="{{ $product->image_url }}"
                                     alt="{{ $product->product_name }}">
                                 @else
                                 <div class="no-image">

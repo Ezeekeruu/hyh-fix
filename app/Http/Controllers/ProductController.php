@@ -190,9 +190,9 @@ class ProductController extends Controller
 
 
         // If the user uploaded a product image, store it in
-        // storage/app/public/products and remember its path.
+        // the uploads disk (products folder) and remember its path.
         if ($request->hasFile('image')) {
-            $product->image_path = $request->file('image')->store('products', 'public');
+            $product->image_path = $request->file('image')->store('products', 's3');
         }
 
 
@@ -360,10 +360,10 @@ class ProductController extends Controller
         // (if it exists) and store the new one instead.
         if ($request->hasFile('image')) {
             if ($product->image_path) {
-                Storage::disk('public')->delete($product->image_path);
+                Storage::disk('s3')->delete($product->image_path);
             }
 
-            $product->image_path = $request->file('image')->store('products', 'public');
+            $product->image_path = $request->file('image')->store('products', 's3');
         }
 
 
@@ -393,7 +393,7 @@ class ProductController extends Controller
 
         // Remove the product's image file from storage, if it has one.
         if ($product->image_path) {
-            Storage::disk('public')->delete($product->image_path);
+            Storage::disk('s3')->delete($product->image_path);
         }
 
 

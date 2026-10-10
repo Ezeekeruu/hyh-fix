@@ -292,7 +292,7 @@
                             <div class="stock-item">
                                 <div class="stock-image">
                                     @if(!empty($product->image_path))
-                                    <img src="{{ asset('storage/' . $product->image_path) }}" alt="{{ $product->product_name }}">
+                                    <img src="{{ $product->image_url }}" alt="{{ $product->product_name }}">
                                     @else
                                     <i class="fa-solid fa-box-open"></i>
                                     @endif

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
 
 class Product extends Model
 {
@@ -27,7 +28,7 @@ class Product extends Model
     // Returns a ready-to-use image URL, or null if no image was uploaded.
     public function getImageUrlAttribute()
     {
-        return $this->image_path ? asset('storage/' . $this->image_path) : null;
+        return $this->image_path ? Storage::disk('s3')->url($this->image_path) : null;
     }
 
     public function category()

@@ -226,7 +226,7 @@
                                 <label>Product Image</label>
                                 <div class="image-preview-container">
                                     @if($product->image_path)
-                                    <img id="image-preview" src="{{ asset('storage/' . $product->image_path) }}" alt="{{ $product->product_name }}">
+                                    <img id="image-preview" src="{{ $product->image_url }}" alt="{{ $product->product_name }}">
                                     @else
                                     <img id="image-preview" src="" alt="Image Preview" style="display: none;">
                                     <div id="image-placeholder" class="image-preview-placeholder">

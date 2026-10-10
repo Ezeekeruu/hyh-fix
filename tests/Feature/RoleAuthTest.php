@@ -11,6 +11,8 @@ use App\Models\Supplier;
 use App\Models\User;
 use Database\Seeders\SampleDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class RoleAuthTest extends TestCase
@@ -486,6 +488,31 @@ class RoleAuthTest extends TestCase
             $page2->assertOk();
             $page2->assertSee($secondPage, false);
         }
+    }
+
+    public function test_product_image_upload_goes_to_s3_disk(): void
+    {
+        Storage::fake('s3');
+
+        $admin = $this->makeUser('admin');
+        $category = Category::create(['category_name' => 'QA Cat']);
+        $supplier = Supplier::create(['supplier_name' => 'QA Sup', 'contact_info' => 'QA Contact', 'location' => 'QA Location']);
+
+        $response = $this->actingAs($admin)->post('/inventory', [
+            'product_name' => 'QA Photo Widget',
+            'sku' => 'QA-TH-004',
+            'category_id' => $category->id,
+            'supplier_id' => $supplier->id,
+            'cost_price' => 100,
+            'sell_price' => 130,
+            'stock_quantity' => 5,
+            'low_stock_threshold' => 5,
+            'image' => UploadedFile::fake()->image('qa.jpg'),
+        ]);
+
+        $response->assertRedirect('/inventory/add');
+        $product = Product::where('sku', 'QA-TH-004')->firstOrFail();
+        Storage::disk('s3')->assertExists($product->image_path);
     }
 
     public function test_master_data_lists_search(): void
