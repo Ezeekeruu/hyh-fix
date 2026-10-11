@@ -31,6 +31,9 @@ use Illuminate\Support\Facades\Hash;
  *   admin / test@example.com / password123  (role admin)
  *   technician / tech@example.com / password123 (role technician)
  *   clerk / clerk@example.com / password123 (role sales-clerk)
+ *   technician / marco@example.com / password123 (role technician)
+ *   technician / liza@example.com / password123 (role technician)
+ *   clerk / ben@example.com / password123 (role sales-clerk)
  *
  * Load:   php artisan db:seed --class=Database\\Seeders\\SampleDataSeeder
  *         (or php artisan migrate:fresh --seed  — wipes all data first)
@@ -47,6 +50,9 @@ class SampleDataSeeder extends Seeder
         $manager = $this->user('Sonayah Faisal', 'test@example.com', 'admin');
         $tech = $this->user('Alex Technician', 'tech@example.com', 'technician');
         $this->user('Casey Clerk', 'clerk@example.com', 'sales-clerk');
+        $this->user('Marco Reyes', 'marco@example.com', 'technician');
+        $this->user('Liza Santos', 'liza@example.com', 'technician');
+        $this->user('Ben Cruz', 'ben@example.com', 'sales-clerk');
 
         // ---- Categories ----
         foreach (['Batteries', 'Chargers & Cables', 'Cases & Covers', 'Screen Protectors', 'Audio'] as $name) {

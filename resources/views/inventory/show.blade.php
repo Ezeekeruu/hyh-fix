@@ -164,10 +164,12 @@
                                     <td style="font-weight: 700;">Supplier</td>
                                     <td>{{ $product->supplier?->supplier_name ?? 'N/A' }}</td>
                                 </tr>
+@if(auth()->check() && auth()->user()->isAdmin())
                                 <tr>
                                     <td style="font-weight: 700;">Cost Price</td>
                                     <td>₱{{ number_format($product->cost_price, 2) }}</td>
                                 </tr>
+@endif
                                 <tr>
                                     <td style="font-weight: 700;">Selling Price</td>
                                     <td>₱{{ number_format($product->sell_price, 2) }}</td>
@@ -186,10 +188,12 @@
 
                     <div class="form-actions">
                         <a href="{{ route('products.index') }}" class="btn-cancel">Back to Inventory</a>
+@if(auth()->check() && auth()->user()->isAdmin())
                         <a href="{{ route('products.edit', $product->id) }}" class="btn-add-product" style="text-decoration: none;">
                             <i class="fa-solid fa-pen"></i>
                             Edit Product
                         </a>
+@endif
                     </div>
                 </section>
             </div>

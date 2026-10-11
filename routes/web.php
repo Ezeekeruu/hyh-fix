@@ -55,9 +55,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/repair-management/{id}/edit', [RepairTicketController::class, 'edit'])->name('repair-tickets.edit');
     Route::put('/repair-management/{id}', [RepairTicketController::class, 'update'])->name('repair-tickets.update');
 
-    // Inventory list — both roles. Staff sees it read-only
-    // (action buttons hidden in the view, writes blocked below).
+    // Inventory list + detail — all roles. Staff sees them read-only
+    // (action buttons hidden in the views, writes blocked below).
     Route::get('/inventory', [ProductController::class, 'index'])->name('products.index');
+    Route::get('/inventory/{id}', [ProductController::class, 'show'])->name('products.show')->whereNumber('id');
 
     // Admin-only: everything that writes inventory, plus cost/profit
     // reports and staff account management. Staff gets 403 here.
@@ -66,7 +67,6 @@ Route::middleware('auth')->group(function () {
 
         Route::get('/inventory/add', [ProductController::class, 'create'])->name('products.create');
         Route::post('/inventory', [ProductController::class, 'store'])->name('products.store');
-        Route::get('/inventory/{id}', [ProductController::class, 'show'])->name('products.show');
         Route::get('/inventory/{id}/edit', [ProductController::class, 'edit'])->name('products.edit');
         Route::put('/inventory/{id}', [ProductController::class, 'update'])->name('products.update');
         Route::delete('/inventory/{id}', [ProductController::class, 'destroy'])->name('products.destroy');

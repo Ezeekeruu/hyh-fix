@@ -278,7 +278,7 @@
                                 <td class="sku-cell">{{ $product->sku }}</td>
                                 <td class="product-info-cell">
                                     <div class="product-details">
-                                        <div class="product-name">{{ $product->product_name }}</div>
+                                        <div class="product-name"><a href="{{ route('products.show', $product->id) }}" style="color: inherit; text-decoration: none;" title="View details">{{ $product->product_name }}</a></div>
                                         <div class="product-spec">Supplier: {{ $product->supplier->supplier_name ?? 'N/A' }}</div>
                                     </div>
                                 </td>

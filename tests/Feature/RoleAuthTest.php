@@ -493,6 +493,28 @@ class RoleAuthTest extends TestCase
         $response = $this->actingAs($admin)->get('/inventory/'.$product->id);
         $response->assertOk();
         $response->assertSee($product->product_name, false);
+        $response->assertSee('Cost Price', false);
+        $response->assertSee('Edit Product', false);
+    }
+
+    public function test_product_show_is_read_only_for_non_admins(): void
+    {
+        $this->seed(SampleDataSeeder::class);
+        $product = Product::firstOrFail();
+
+        foreach (['sales-clerk', 'technician'] as $role) {
+            $user = $this->makeUser($role);
+
+            $response = $this->actingAs($user)->get('/inventory/'.$product->id);
+            $response->assertOk();
+            $response->assertSee($product->product_name, false);
+            $response->assertSee('Selling Price', false);
+            $response->assertDontSee('Cost Price', false);
+            $response->assertDontSee('Edit Product', false);
+
+            // Writes stay blocked even though detail is visible.
+            $this->actingAs($user)->get('/inventory/'.$product->id.'/edit')->assertForbidden();
+        }
     }
 
     public function test_user_update_rejects_unknown_status(): void

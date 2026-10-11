@@ -65,8 +65,10 @@ class RepairTicketController extends Controller
             $query->where('assigned_to', $request->technician);
         }
 
+        // Newest ticket number first (id order — created_at ties when
+        // tickets are seeded together, which used to scatter the list).
         $repairTickets = $query
-            ->latest()
+            ->latest('id')
             ->paginate(10)
             ->appends($request->query());
 
