@@ -220,6 +220,24 @@ class RoleAuthTest extends TestCase
         $this->actingAs($staff)->get('/staff/dashboard')->assertOk();
     }
 
+    public function test_reports_sales_overview_matches_dashboard(): void
+    {
+        $this->seed(SampleDataSeeder::class);
+        $admin = User::where('email', 'test@example.com')->firstOrFail();
+
+        $response = $this->actingAs($admin)->get('/reports');
+        $response->assertOk();
+        $response->assertSee('Total Revenue Trajectory', false);
+        $response->assertSee('Device Accessories', false);
+        $response->assertSee('(Peak)', false);
+        $response->assertSee('Peak Operational Day', false);
+        $response->assertSee('Top Grossing Category', false);
+        $response->assertSee('Retail Conversion Rate', false);
+        // Same trailing 8-week window as the dashboard, so same values.
+        $response->assertSee('Audio', false);
+        $response->assertSee('100.0% (of repair clients)', false);
+    }
+
     public function test_admin_dashboard_shows_staff_performance(): void
     {
         $this->seed(SampleDataSeeder::class);

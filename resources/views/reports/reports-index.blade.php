@@ -230,7 +230,7 @@
                             <h2>Sales Overview</h2>
                         </div>
 
-                        <p>Sales comparison of repairs, and accessories over the last 8 weeks.</p>
+                        <p>Sales comparison of repairs and accessories over the last 8 weeks.</p>
                     </div>
                 </div>
 
@@ -244,11 +244,11 @@
 
                     <div class="legend-item">
                         <span class="dot blue"></span>
-                        Retail & Parts
+                        Device Accessories
                     </div>
 
                     <div class="legend-item">
-                        <span class="dash"></span>
+                        <span class="dot line"></span>
                         Total Revenue Trajectory
                     </div>
                 </div>
@@ -263,15 +263,15 @@
                     <div class="insight-icon"><i class="fa-regular fa-calendar"></i></div>
                     <div>
                         <span>Peak Operational Day</span>
-                        <h4></h4>
+                        <h4>{{ $insights['peakDay'] ? $insights['peakDay']['day'] . ' (₱' . number_format($insights['peakDay']['revenue'], 2) . ')' : '—' }}</h4>
                     </div>
                 </div>
 
                 <div class="insight-card">
-                    <div class="insight-icon"><i class="fa-solid fa-mobile-screen"></i></div>
+                    <div class="insight-icon"><i class="fa-solid fa-tags"></i></div>
                     <div>
                         <span>Top Grossing Category</span>
-                        <h4></h4>
+                        <h4>{{ $insights['topCategory'] ? $insights['topCategory']['name'] . ' (₱' . number_format($insights['topCategory']['revenue'], 2) . ')' : '—' }}</h4>
                     </div>
                 </div>
 
@@ -279,7 +279,7 @@
                     <div class="insight-icon"><i class="fa-solid fa-bag-shopping"></i></div>
                     <div>
                         <span>Retail Conversion Rate</span>
-                        <h4></h4>
+                        <h4>{{ number_format($insights['conversion'], 1) }}% (of repair clients)</h4>
                     </div>
                 </div>
             </section>
@@ -539,21 +539,67 @@
         (function () {
             var el = document.getElementById('salesChart');
             if (!el || typeof Chart === 'undefined') return;
-            var series = @json($weeklySeries);
+            var r = @json($weeklySeries);
+            function money(v) {
+                return '₱' + Number(v).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            }
             new Chart(el, {
                 type: 'bar',
                 data: {
-                    labels: series.labels,
+                    labels: r.labels,
                     datasets: [
-                        { label: 'Repair Services', data: series.repair, backgroundColor: '#1e293b', borderRadius: 6 },
-                        { label: 'Retail & Parts', data: series.retail, backgroundColor: '#60a5fa', borderRadius: 6 }
+                        { type: 'bar', label: 'Repair Services', data: r.repair, backgroundColor: '#1e293b', borderRadius: 6, order: 2 },
+                        { type: 'bar', label: 'Device Accessories', data: r.retail, backgroundColor: '#60a5fa', borderRadius: 6, order: 2 },
+                        { type: 'line', label: 'Total Revenue Trajectory', data: r.total, borderColor: '#2563eb', backgroundColor: '#2563eb', borderWidth: 2.5, pointRadius: 4, pointHoverRadius: 6, tension: 0.35, order: 1 }
                     ]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: { y: { beginAtZero: true, ticks: { callback: function (v) { return '₱' + v; } } } }
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                title: function (items) {
+                                    var label = items[0].label;
+                                    if (r.peakIdx !== null && items[0].dataIndex === r.peakIdx) {
+                                        label += ' (Peak Volume)';
+                                    }
+                                    return label;
+                                },
+                                label: function (ctx) {
+                                    var i = ctx.dataIndex;
+                                    if (ctx.datasetIndex === 2) {
+                                        var line = 'Total Rev: ' + money(ctx.parsed.y);
+                                        if (i > 0) {
+                                            var prev = r.total[i - 1] || 0;
+                                            if (prev > 0) {
+                                                var pct = Math.round(((r.total[i] - prev) / prev) * 100);
+                                                line += ' (' + (pct >= 0 ? '+' : '') + pct + '% vs prev)';
+                                            }
+                                        }
+                                        return line;
+                                    }
+                                    if (ctx.datasetIndex === 0) {
+                                        return 'Repairs: ' + r.repairCount[i] + ' fixed · ' + money(ctx.parsed.y);
+                                    }
+                                    return 'Retail: ' + r.retailQty[i] + ' items · ' + money(ctx.parsed.y);
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, ticks: { callback: function (v) { return '₱' + v; } } },
+                        x: {
+                            ticks: {
+                                color: function (c) {
+                                    var label = c.tick.label || '';
+                                    return label.indexOf('(Peak)') !== -1 ? '#1d4ed8' : '#6b7280';
+                                }
+                            }
+                        }
+                    }
                 }
             });
         })();

@@ -390,6 +390,13 @@ body {
     background: #60a5fa;
 }
 
+.dot.line {
+    width: 22px;
+    height: 3px;
+    border-radius: 2px;
+    background: #2563eb;
+}
+
 .chart-placeholder {
     margin-top: 20px;
     height: 340px;
@@ -958,13 +965,7 @@ td {
     text-transform: uppercase;
 }
 
-/* SALES OVERVIEW: legend line dash */
-.legend-item .dash {
-    width: 18px;
-    height: 2px;
-    background: var(--sidebar);
-    display: inline-block;
-}
+/* SALES OVERVIEW: legend trajectory line (dot line, same as dashboard) */
 
 /* INSIGHT ROW */
 .insight-row {
