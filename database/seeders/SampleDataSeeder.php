@@ -163,6 +163,66 @@ class SampleDataSeeder extends Seeder
             );
         }
 
+        // ---- Extra devices (all Juan's/Maria's, so the demo retail
+        // conversion insight stays meaningful) ----
+        $extraDevices = [
+            // imei, owner, brand, model
+            ['867123045678901', $juan->id, 'Xiaomi', 'Redmi Note 12'],
+            ['869123045678902', $maria->id, 'Oppo', 'Reno 8'],
+            ['860123045678903', $juan->id, 'Vivo', 'Y36'],
+            ['358201091234568', $maria->id, 'Apple', 'iPhone 11'],
+            ['860123045678904', $juan->id, 'Samsung', 'Galaxy S22'],
+            ['867123045678905', $maria->id, 'Realme', '10 Pro'],
+        ];
+        $more = [];
+        foreach ($extraDevices as [$imei, $owner, $brand, $model]) {
+            $more[] = Device::firstOrCreate(
+                ['serial_or_imei' => $imei],
+                ['customer_id' => $owner, 'brand' => $brand, 'model' => $model]
+            );
+        }
+        [$d3, $d4, $d5, $d6, $d7, $d8] = $more;
+
+        // ---- Extra repair tickets: 17 more, 20 total, spread over the
+        // last ~6 weeks so charts and filters have something to show ----
+        $extraTickets = [
+            // device, service, status, problem, quote, final, receivedDaysAgo, completedDaysAgo|null
+            [$d3, 'Screen Replacement', 'pending', 'Cracked display, lines on screen.', 2800, 2800, 1, null],
+            [$d3, 'Battery Replacement', 'completed', 'Phone shuts off at 20%.', 1500, 1500, 12, 10],
+            [$d4, 'Water Damage Repair', 'in_progress', 'Dropped in water, drying + board check.', 3500, 3500, 4, null],
+            [$d4, 'Software Troubleshooting', 'completed', 'Bootloop after update.', 500, 500, 20, 19],
+            [$d5, 'Battery Replacement', 'pending', 'Bloated battery, needs swap.', 1100, 1100, 3, null],
+            [$d5, 'Screen Replacement', 'in_progress', 'Dead pixels spreading.', 2300, 2300, 6, null],
+            [$d6, 'Screen Replacement', 'completed', 'Shattered front glass.', 3200, 3200, 30, 27],
+            [$d6, 'Charging Port Repair', 'pending', 'Cable only charges at an angle.', 900, 900, 2, null],
+            [$d7, 'Charging Port Repair', 'completed', 'No charging at all.', 950, 950, 15, 13],
+            [$d7, 'Water Damage Repair', 'pending', 'Rain damage, speakers crackling.', 4000, 4000, 1, null],
+            [$d8, 'Software Troubleshooting', 'in_progress', 'Apps crashing, storage full.', 600, 600, 7, null],
+            [$d8, 'Battery Replacement', 'completed', 'Overheats while charging.', 1300, 1300, 40, 38],
+            [$d1, 'Battery Replacement', 'completed', 'Health at 72%, drains fast.', 1400, 1400, 25, 24],
+            [$d2, 'Screen Replacement', 'pending', 'Hairline crack, touch OK.', 2600, 2600, 2, null],
+            [$d2, 'Software Troubleshooting', 'completed', 'Forgot password, reset needed.', 550, 550, 33, 31],
+            [$d4, 'Screen Replacement', 'cancelled', 'Customer cancelled before parts arrived.', 2400, 0, 18, null],
+            [$d6, 'Battery Replacement', 'in_progress', 'Swollen back panel.', 1250, 1250, 8, null],
+        ];
+        foreach ($extraTickets as [$device, $service, $status, $problem, $quote, $final, $receivedAgo, $completedAgo]) {
+            $ticket = RepairTicket::firstOrCreate(
+                ['device_id' => $device->id, 'service_type' => $service, 'status' => $status],
+                [
+                    'assigned_to' => $tech->id,
+                    'problem_description' => $problem,
+                    'quotation_price' => $quote,
+                    'final_price' => $final,
+                    'date_received' => now()->subDays($receivedAgo),
+                    'date_completed' => $completedAgo === null ? null : now()->subDays($completedAgo),
+                ]
+            );
+            RepairStatusHistory::firstOrCreate(
+                ['repair_ticket_id' => $ticket->id, 'status' => $ticket->status],
+                ['changed_by' => $manager->id, 'changed_at' => now()]
+            );
+        }
+
         // ---- Sales + items (today + this week, Cash + GCash) ----
         $this->sale($manager->id, $juan->id, 'Cash', 'completed', now()->subHours(3), [
             ['GLS-IP13-006', 2],
