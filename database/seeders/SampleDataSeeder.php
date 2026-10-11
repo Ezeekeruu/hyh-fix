@@ -28,9 +28,9 @@ use Illuminate\Support\Facades\Hash;
  * as sale cashiers (sales.user_id) and repair assignees, and are
  * ready if auth is added later.
  *
- *   manager / test@example.com / password123  (role admin)
- *   technician / tech@example.com / password123 (role staff)
- *   clerk / clerk@example.com / password123 (role staff)
+ *   admin / test@example.com / password123  (role admin)
+ *   technician / tech@example.com / password123 (role technician)
+ *   clerk / clerk@example.com / password123 (role sales-clerk)
  *
  * Load:   php artisan db:seed --class=Database\\Seeders\\SampleDataSeeder
  *         (or php artisan migrate:fresh --seed  — wipes all data first)
@@ -45,8 +45,8 @@ class SampleDataSeeder extends Seeder
     {
         // ---- Users (cashiers / technicians / history authors) ----
         $manager = $this->user('Sonayah Faisal', 'test@example.com', 'admin');
-        $tech = $this->user('Alex Technician', 'tech@example.com', 'staff');
-        $this->user('Casey Clerk', 'clerk@example.com', 'staff');
+        $tech = $this->user('Alex Technician', 'tech@example.com', 'technician');
+        $this->user('Casey Clerk', 'clerk@example.com', 'sales-clerk');
 
         // ---- Categories ----
         foreach (['Batteries', 'Chargers & Cables', 'Cases & Covers', 'Screen Protectors', 'Audio'] as $name) {

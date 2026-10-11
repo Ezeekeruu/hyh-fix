@@ -70,7 +70,7 @@ class RepairTicketController extends Controller
             ->paginate(10)
             ->appends($request->query());
 
-        $technicians = User::where('role', 'staff')
+        $technicians = User::where('role', 'technician')
             ->where('status', 'active')
             ->orderBy('name')
             ->get();
@@ -86,7 +86,7 @@ class RepairTicketController extends Controller
     // =========================================================
     public function create()
     {
-        $users = User::where('role', 'staff')
+        $users = User::where('role', 'technician')
             ->where('status', 'active')
             ->get();
 
@@ -250,11 +250,11 @@ class RepairTicketController extends Controller
         $devices = Device::with('customer')->get();
 
 
-        // Get only active staff users.
+        // Get only active technicians.
         //
         // These users can be selected as
         // the assigned staff member.
-        $users = User::where('role', 'staff')
+        $users = User::where('role', 'technician')
             ->where('status', 'active')
             ->get();
 

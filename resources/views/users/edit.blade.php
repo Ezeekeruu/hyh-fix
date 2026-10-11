@@ -34,10 +34,12 @@
                     Dashboard
                 </a>
 
+@if(auth()->check() && auth()->user()->canAccessPos())
                 <a href="{{ url('/pos') }}" class="nav-link">
                     <i class="fa-solid fa-cash-register"></i>
                     POS
                 </a>
+@endif
 
                 <p class="nav-group-label">MANAGEMENT</p>
                 <a href="{{ url('/repair-management') }}" class="nav-link">
@@ -45,10 +47,12 @@
                     Repair Management
                 </a>
 
+@if(auth()->check() && auth()->user()->canViewTransactions())
                 <a href="{{ url('/transaction-history') }}" class="nav-link">
                     <i class="fa-regular fa-clipboard"></i>
                     Transaction History
                 </a>
+@endif
 
                 <a href="{{ url('/inventory') }}" class="nav-link">
                     <i class="fa-solid fa-box"></i>
@@ -179,8 +183,7 @@
                                 <label for="role">Role</label>
                                 <select id="role" name="role" required>
                                     <option value="" disabled>Select a role</option>
-                                    <option value="manager" {{ old('role', $user->role) == 'manager' || old('role', $user->role) == 'admin' ? 'selected' : '' }}>Manager</option>
-                                    <option value="secretary" {{ old('role', $user->role) == 'secretary' ? 'selected' : '' }}>Secretary</option>
+                                    <option value="admin" {{ old('role', $user->role) == 'admin' ? 'selected' : '' }}>Admin</option>
                                     <option value="sales-clerk" {{ old('role', $user->role) == 'sales-clerk' ? 'selected' : '' }}>Sales Clerk</option>
                                     <option value="technician" {{ old('role', $user->role) == 'technician' ? 'selected' : '' }}>Technician</option>
                                 </select>

@@ -34,10 +34,12 @@
                     Dashboard
                 </a>
 
+@if(auth()->check() && auth()->user()->canAccessPos())
                 <a href="{{ url('/pos') }}" class="nav-link">
                     <i class="fa-solid fa-cash-register"></i>
                     POS
                 </a>
+@endif
 
                 <p class="nav-group-label">MANAGEMENT</p>
                 <a href="{{ url('/repair-management') }}" class="nav-link ">
@@ -45,10 +47,12 @@
                     Repair Management
                 </a>
 
+@if(auth()->check() && auth()->user()->canViewTransactions())
                 <a href="{{ url('/transaction-history') }}" class="nav-link">
                     <i class="fa-regular fa-clipboard"></i>
                     Transaction History
                 </a>
+@endif
 
                 <a href="{{ url('/inventory') }}" class="nav-link">
                     <i class="fa-solid fa-box"></i>
@@ -153,7 +157,7 @@
             <!-- Cards -->
             <section class="stats-grid">
 
-                <a href="{{ auth()->user()->isAdmin() ? url('/reports') . '?filter=today' : url('/transaction-history') . '?date=today' }}" class="stat-card stat-link" title="{{ auth()->user()->isAdmin() ? 'View reports' : "View today's transactions" }}">
+                <a href="{{ auth()->user()->canViewTransactions() ? url('/transaction-history') . '?date=today' : url('/staff/dashboard') . '#transactions' }}" class="stat-card stat-link" title="{{ auth()->user()->canViewTransactions() ? "View today's transactions" : 'View recent transactions' }}">
                     <div class="stat-top">
                         <h5>TODAY'S SALES</h5>
                         <div class="icon-box">
@@ -163,7 +167,7 @@
                     <h2 class="stat-value">₱{{ number_format($todaySales, 2) }}</h2>
                 </a>
 
-                <a href="{{ url('/transaction-history') }}?date=today" class="stat-card stat-link" title="View transaction history">
+                <a href="{{ auth()->user()->canViewTransactions() ? url('/transaction-history') . '?date=today' : url('/staff/dashboard') . '#transactions' }}" class="stat-card stat-link" title="{{ auth()->user()->canViewTransactions() ? 'View transaction history' : 'View recent transactions' }}">
                     <div class="stat-top">
                         <h5>TODAY'S TRANSACTIONS</h5>
                         <div class="icon-box">
@@ -403,12 +407,15 @@
 
                                 <td>
                                     <div class="actions">
-                                        @if($t->type === 'Retail')
+                                        @if($t->type === 'Retail' && auth()->check() && auth()->user()->canViewTransactions())
                                         <a href="{{ url('/sales/' . $t->record_id) }}" title="View receipt"><i class="fa-regular fa-file-lines"></i></a>
                                         <a href="{{ url('/sales/' . $t->record_id) }}?print=1" title="Print receipt"><i class="fa-solid fa-print"></i></a>
-                                        @else
+                                        @elseif($t->type !== 'Retail')
                                         <a href="{{ url('/repair-management/' . $t->record_id) }}" title="View ticket"><i class="fa-regular fa-file-lines"></i></a>
                                         <i class="fa-solid fa-print" style="opacity:.4" title="No receipt for repairs"></i>
+                                        @else
+                                        <i class="fa-regular fa-file-lines" style="opacity:.4" title="No receipt access"></i>
+                                        <i class="fa-solid fa-print" style="opacity:.4" title="No receipt access"></i>
                                         @endif
                                     </div>
                                 </td>

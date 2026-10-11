@@ -33,25 +33,27 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/staff/dashboard', [DashboardController::class, 'staffDashboard'])->name('staff.dashboard');
 
-    // POS — both roles can process sales.
-    Route::get('/pos', [SaleController::class, 'create'])->name('pos.index');
-    Route::post('/pos', [SaleController::class, 'store'])->name('sales.store');
+    // POS + Transaction History — admin and sales clerks only.
+    // Technicians get 403 here (no POS, no history in their nav either).
+    Route::middleware('role:admin,sales-clerk')->group(function () {
+        Route::get('/pos', [SaleController::class, 'create'])->name('pos.index');
+        Route::post('/pos', [SaleController::class, 'store'])->name('sales.store');
 
-    // Repair Management — both roles (unchanged behavior).
+        Route::get('/transaction-history', [SaleController::class, 'transactionHistory'])
+            ->name('transaction.history');
+
+        Route::get('/sales/{id}', [SaleController::class, 'show'])
+            ->name('sales.show');
+    });
+
+    // Repair Management — add/edit for all signed-in roles (unchanged behavior).
+    // Delete is admin-only (see the admin group below).
     Route::get('/repair-management', [RepairTicketController::class, 'index'])->name('repair-tickets.index');
     Route::get('/repair-management/create', [RepairTicketController::class, 'create'])->name('repair-tickets.create');
     Route::post('/repair-management', [RepairTicketController::class, 'store'])->name('repair-tickets.store');
     Route::get('/repair-management/{id}', [RepairTicketController::class, 'show'])->name('repair-tickets.show');
     Route::get('/repair-management/{id}/edit', [RepairTicketController::class, 'edit'])->name('repair-tickets.edit');
     Route::put('/repair-management/{id}', [RepairTicketController::class, 'update'])->name('repair-tickets.update');
-    Route::delete('/repair-management/{id}', [RepairTicketController::class, 'destroy'])->name('repair-tickets.destroy');
-
-    // Transaction History — both roles, read-only UI (receipt view only).
-    Route::get('/transaction-history', [SaleController::class, 'transactionHistory'])
-        ->name('transaction.history');
-
-    Route::get('/sales/{id}', [SaleController::class, 'show'])
-        ->name('sales.show');
 
     // Inventory list — both roles. Staff sees it read-only
     // (action buttons hidden in the view, writes blocked below).
@@ -60,6 +62,8 @@ Route::middleware('auth')->group(function () {
     // Admin-only: everything that writes inventory, plus cost/profit
     // reports and staff account management. Staff gets 403 here.
     Route::middleware('role:admin')->group(function () {
+        Route::delete('/repair-management/{id}', [RepairTicketController::class, 'destroy'])->name('repair-tickets.destroy');
+
         Route::get('/inventory/add', [ProductController::class, 'create'])->name('products.create');
         Route::post('/inventory', [ProductController::class, 'store'])->name('products.store');
         Route::get('/inventory/{id}', [ProductController::class, 'show'])->name('products.show');

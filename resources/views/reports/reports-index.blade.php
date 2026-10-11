@@ -34,10 +34,12 @@
                     Dashboard
                 </a>
 
+@if(auth()->check() && auth()->user()->canAccessPos())
                 <a href="{{ url('/pos') }}" class="nav-link">
                     <i class="fa-solid fa-cash-register"></i>
                     POS
                 </a>
+@endif
 
                 <p class="nav-group-label">MANAGEMENT</p>
                 <a href="{{ url('/repair-management') }}" class="nav-link ">
@@ -45,10 +47,12 @@
                     Repair Management
                 </a>
 
+@if(auth()->check() && auth()->user()->canViewTransactions())
                 <a href="{{ url('/transaction-history') }}" class="nav-link">
                     <i class="fa-regular fa-clipboard"></i>
                     Transaction History
                 </a>
+@endif
 
                 <a href="{{ url('/inventory') }}" class="nav-link">
                     <i class="fa-solid fa-box"></i>

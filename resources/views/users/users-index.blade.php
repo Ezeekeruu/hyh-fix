@@ -34,10 +34,12 @@
                     Dashboard
                 </a>
 
+@if(auth()->check() && auth()->user()->canAccessPos())
                 <a href="{{ url('/pos') }}" class="nav-link">
                     <i class="fa-solid fa-cash-register"></i>
                     POS
                 </a>
+@endif
 
                 <p class="nav-group-label">MANAGEMENT</p>
                 <a href="{{ url('/repair-management') }}" class="nav-link">
@@ -45,10 +47,12 @@
                     Repair Management
                 </a>
 
+@if(auth()->check() && auth()->user()->canViewTransactions())
                 <a href="{{ url('/transaction-history') }}" class="nav-link">
                     <i class="fa-regular fa-clipboard"></i>
                     Transaction History
                 </a>
+@endif
 
                 <a href="{{ url('/inventory') }}" class="nav-link">
                     <i class="fa-solid fa-box"></i>
@@ -158,8 +162,9 @@
                         <div class="filter-dropdown">
                             <select name="role" onchange="this.form.submit()">
                                 <option value="all" {{ request('role') == 'all' || !request('role') ? 'selected' : '' }}>All Roles</option>
-                                <option value="admin" {{ request('role') == 'admin' ? 'selected' : '' }}>Manager</option>
-                                <option value="staff" {{ request('role') == 'staff' ? 'selected' : '' }}>Staff</option>
+                                <option value="admin" {{ request('role') == 'admin' ? 'selected' : '' }}>Admin</option>
+                                <option value="technician" {{ request('role') == 'technician' ? 'selected' : '' }}>Technician</option>
+                                <option value="sales-clerk" {{ request('role') == 'sales-clerk' ? 'selected' : '' }}>Sales Clerk</option>
                             </select>
                         </div>
 
@@ -218,7 +223,7 @@
                                 </td>
                                 <td>
                                     <span class="role-badge {{ $user->role }}">
-                                        {{ ucfirst($user->role) }}
+                                        {{ $user->roleLabel() }}
                                     </span>
                                 </td>
                                 <td>

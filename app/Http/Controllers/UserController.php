@@ -41,7 +41,7 @@ class UserController extends Controller
             });
         }
 
-        // 2. Filter by Role ('admin' or 'staff')
+        // 2. Filter by Role ('admin', 'technician' or 'sales-clerk')
         if ($request->filled('role') && $request->role !== 'all') {
             $query->where('role', $request->role);
         }
@@ -101,18 +101,16 @@ class UserController extends Controller
             // Password is required when creating a new account.
             'password'  => 'required|string|min:6',
 
-            'role'      => 'required|in:manager,secretary,sales-clerk,technician,admin,staff',
+            'role'      => 'required|in:admin,technician,sales-clerk',
 
             'status' => 'required|in:active,disabled',
         ]);
-
-        $dbRole = ($request->input('role') === 'manager') ? 'admin' : 'staff';
 
         $user = new User();
         $user->name = $request->input('name');
         $user->email = $request->input('email');
         $user->password = Hash::make($request->input('password'));
-        $user->role = $dbRole;
+        $user->role = $request->input('role');
         $user->status = $request->input('status');
         $user->save();
 
@@ -157,25 +155,16 @@ class UserController extends Controller
 
             'password' => 'nullable|string|min:8|confirmed',
 
-            // Accept both select options and underlying DB roles
-            'role' => 'required|in:manager,secretary,sales-clerk,technician,admin,staff',
+            // The three account roles, stored as-is.
+            'role' => 'required|in:admin,technician,sales-clerk',
 
             // Only values the users.status enum accepts.
             'status' => 'required|in:active,disabled',
         ]);
 
-        $roleInput = $request->input('role');
-        if ($roleInput === 'manager') {
-            $dbRole = 'admin';
-        } elseif (in_array($roleInput, ['secretary', 'sales-clerk', 'technician'])) {
-            $dbRole = 'staff';
-        } else {
-            $dbRole = $roleInput; // Preserves admin or staff if already set
-        }
-
         $user->name   = $request->input('name');
         $user->email  = $request->input('email');
-        $user->role   = $dbRole;
+        $user->role   = $request->input('role');
         $user->status = $request->input('status');
 
         if ($request->filled('password')) {

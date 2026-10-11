@@ -64,22 +64,25 @@ class RoleAuthTest extends TestCase
         $this->assertAuthenticatedAs($admin);
     }
 
-    public function test_staff_login_redirects_to_staff_dashboard(): void
+    public function test_non_admin_login_redirects_to_staff_dashboard(): void
     {
-        $staff = $this->makeUser('staff');
+        foreach (['sales-clerk', 'technician'] as $role) {
+            $user = $this->makeUser($role);
 
-        $response = $this->post('/login', [
-            'email' => $staff->email,
-            'password' => 'password',
-        ]);
+            $response = $this->post('/login', [
+                'email' => $user->email,
+                'password' => 'password',
+            ]);
 
-        $response->assertRedirect('/staff/dashboard');
-        $this->assertAuthenticatedAs($staff);
+            $response->assertRedirect('/staff/dashboard');
+            $this->assertAuthenticatedAs($user);
+            $this->post('/logout');
+        }
     }
 
     public function test_disabled_accounts_cannot_log_in(): void
     {
-        $user = $this->makeUser('staff', 'disabled');
+        $user = $this->makeUser('sales-clerk', 'disabled');
 
         $response = $this->from('/login')->post('/login', [
             'email' => $user->email,
@@ -93,33 +96,42 @@ class RoleAuthTest extends TestCase
     public function test_each_role_lands_on_its_own_dashboard(): void
     {
         $admin = $this->makeUser('admin');
-        $staff = $this->makeUser('staff');
+        $clerk = $this->makeUser('sales-clerk');
+        $tech = $this->makeUser('technician');
 
         $this->actingAs($admin)->get('/staff/dashboard')->assertRedirect('/dashboard');
-        $this->actingAs($staff)->get('/dashboard')->assertRedirect('/staff/dashboard');
-        $this->actingAs($staff)->get('/staff/dashboard')->assertOk();
+        $this->actingAs($clerk)->get('/dashboard')->assertRedirect('/staff/dashboard');
+        $this->actingAs($tech)->get('/dashboard')->assertRedirect('/staff/dashboard');
+        $this->actingAs($clerk)->get('/staff/dashboard')->assertOk();
+        $this->actingAs($tech)->get('/staff/dashboard')->assertOk();
     }
 
-    public function test_staff_cannot_access_admin_sections(): void
+    public function test_non_admins_cannot_access_admin_sections(): void
     {
-        $staff = $this->makeUser('staff');
+        foreach (['sales-clerk', 'technician'] as $role) {
+            $user = $this->makeUser($role);
 
-        $this->actingAs($staff)->get('/reports')->assertForbidden();
-        $this->actingAs($staff)->get('/user-management')->assertForbidden();
-        $this->actingAs($staff)->get('/inventory/add')->assertForbidden();
-        $this->actingAs($staff)->post('/inventory', [])->assertForbidden();
+            $this->actingAs($user)->get('/reports')->assertForbidden();
+            $this->actingAs($user)->get('/user-management')->assertForbidden();
+            $this->actingAs($user)->get('/inventory/add')->assertForbidden();
+            $this->actingAs($user)->post('/inventory', [])->assertForbidden();
+        }
     }
 
-    public function test_staff_sees_limited_navigation_and_read_only_inventory(): void
+    public function test_clerk_keeps_pos_history_and_read_only_inventory(): void
     {
-        $staff = $this->makeUser('staff');
+        $clerk = $this->makeUser('sales-clerk');
 
-        $dash = $this->actingAs($staff)->get('/staff/dashboard');
+        $dash = $this->actingAs($clerk)->get('/staff/dashboard');
         $dash->assertOk();
+        $dash->assertSee('/pos', false);
+        $dash->assertSee('/transaction-history', false);
         $dash->assertDontSee('/reports', false);
         $dash->assertDontSee('/user-management', false);
 
-        $response = $this->actingAs($staff)->get('/inventory');
+        $this->actingAs($clerk)->get('/pos')->assertOk();
+
+        $response = $this->actingAs($clerk)->get('/inventory');
         $response->assertOk();
         $response->assertDontSee('/reports', false);
         $response->assertDontSee('/user-management', false);
@@ -129,10 +141,83 @@ class RoleAuthTest extends TestCase
         $response->assertSee('MANAGEMENT', false);
         $response->assertDontSee('ADMIN', false);
 
-        $history = $this->actingAs($staff)->get('/transaction-history');
+        $history = $this->actingAs($clerk)->get('/transaction-history');
         $history->assertOk();
         $history->assertDontSee('/reports', false);
         $history->assertDontSee('/user-management', false);
+    }
+
+    public function test_technician_has_no_pos_or_history(): void
+    {
+        $tech = $this->makeUser('technician');
+
+        $dash = $this->actingAs($tech)->get('/staff/dashboard');
+        $dash->assertOk();
+        $dash->assertDontSee('/pos', false);
+        $dash->assertDontSee('/transaction-history', false);
+        $dash->assertDontSee('/reports', false);
+        $dash->assertDontSee('/user-management', false);
+        $dash->assertSee('/repair-management', false);
+        $dash->assertSee('/inventory', false);
+
+        $this->actingAs($tech)->get('/pos')->assertForbidden();
+        $this->actingAs($tech)->post('/pos', [])->assertForbidden();
+        $this->actingAs($tech)->get('/transaction-history')->assertForbidden();
+        $this->actingAs($tech)->get('/sales/1')->assertForbidden();
+
+        $this->actingAs($tech)->get('/repair-management')->assertOk();
+        $this->actingAs($tech)->get('/repair-management/create')->assertOk();
+
+        $inventory = $this->actingAs($tech)->get('/inventory');
+        $inventory->assertOk();
+        $inventory->assertDontSee('Add New Item', false);
+        $inventory->assertDontSee('ACTIONS', false);
+    }
+
+    public function test_repair_delete_is_admin_only(): void
+    {
+        $this->seed(SampleDataSeeder::class);
+        $ticket = RepairTicket::firstOrFail();
+        $admin = User::where('email', 'test@example.com')->firstOrFail();
+
+        foreach (['sales-clerk', 'technician'] as $role) {
+            $user = $this->makeUser($role);
+
+            $this->actingAs($user)->delete('/repair-management/'.$ticket->id)->assertForbidden();
+
+            $list = $this->actingAs($user)->get('/repair-management');
+            $list->assertOk();
+            $list->assertDontSee('Delete this repair ticket', false);
+        }
+
+        $adminList = $this->actingAs($admin)->get('/repair-management');
+        $adminList->assertSee('Delete this repair ticket', false);
+
+        $this->actingAs($admin)->delete('/repair-management/'.$ticket->id)->assertRedirect('/repair-management');
+        $this->assertDatabaseMissing('repair_tickets', ['id' => $ticket->id]);
+    }
+
+    public function test_user_management_accepts_only_three_roles(): void
+    {
+        $admin = $this->makeUser('admin');
+
+        $this->actingAs($admin)->post('/user-management', [
+            'name' => 'Tina Tech',
+            'email' => 'tina@example.com',
+            'password' => 'password123',
+            'role' => 'technician',
+            'status' => 'active',
+        ])->assertRedirect('/user-management');
+        $this->assertDatabaseHas('users', ['email' => 'tina@example.com', 'role' => 'technician']);
+
+        $this->actingAs($admin)->post('/user-management', [
+            'name' => 'Gary Ghost',
+            'email' => 'gary@example.com',
+            'password' => 'password123',
+            'role' => 'manager',
+            'status' => 'active',
+        ])->assertSessionHasErrors('role');
+        $this->assertDatabaseMissing('users', ['email' => 'gary@example.com']);
     }
 
     public function test_admin_keeps_full_navigation_and_inventory_actions(): void
@@ -152,7 +237,7 @@ class RoleAuthTest extends TestCase
 
     public function test_logout_returns_to_login(): void
     {
-        $staff = $this->makeUser('staff');
+        $staff = $this->makeUser('sales-clerk');
 
         $response = $this->actingAs($staff)->post('/logout');
 
@@ -163,7 +248,7 @@ class RoleAuthTest extends TestCase
     public function test_role_pages_render(): void
     {
         $admin = $this->makeUser('admin');
-        $staff = $this->makeUser('staff');
+        $staff = $this->makeUser('sales-clerk');
 
         $this->actingAs($admin)->get('/dashboard')->assertOk();
         $this->actingAs($staff)->get('/pos')->assertOk();
@@ -181,7 +266,7 @@ class RoleAuthTest extends TestCase
         $this->get('/')->assertRedirect('/login');
 
         $admin = $this->makeUser('admin');
-        $staff = $this->makeUser('staff');
+        $staff = $this->makeUser('sales-clerk');
 
         $this->actingAs($admin)->get('/')->assertRedirect('/dashboard');
         $this->actingAs($staff)->get('/')->assertRedirect('/staff/dashboard');
@@ -216,7 +301,7 @@ class RoleAuthTest extends TestCase
         // Both seeded repair clients (Juan, Maria) also bought retail.
         $response->assertSee('100.0% (of repair clients)', false);
 
-        $staff = $this->makeUser('staff');
+        $staff = $this->makeUser('technician');
         $this->actingAs($staff)->get('/staff/dashboard')->assertOk();
     }
 
@@ -250,10 +335,15 @@ class RoleAuthTest extends TestCase
         $response->assertSee('Revenue Generated', false);
 
         // Role filter keeps matching staff, drops the rest.
-        $filtered = $this->actingAs($admin)->get('/dashboard?staff_role=staff');
-        $filtered->assertOk();
-        $filtered->assertSee('Alex Technician', false);
-        $filtered->assertSee('Casey Clerk', false);
+        $clerks = $this->actingAs($admin)->get('/dashboard?staff_role=sales-clerk');
+        $clerks->assertOk();
+        $clerks->assertSee('Casey Clerk', false);
+        $clerks->assertDontSee('Alex Technician', false);
+
+        $techs = $this->actingAs($admin)->get('/dashboard?staff_role=technician');
+        $techs->assertOk();
+        $techs->assertSee('Alex Technician', false);
+        $techs->assertDontSee('Casey Clerk', false);
 
         $adminOnly = $this->actingAs($admin)->get('/dashboard?staff_role=admin');
         $adminOnly->assertOk();
@@ -262,7 +352,7 @@ class RoleAuthTest extends TestCase
         $adminOnly->assertDontSee('Casey Clerk', false);
 
         // Staff never sees peer performance.
-        $staff = $this->makeUser('staff');
+        $staff = $this->makeUser('sales-clerk');
         $this->actingAs($staff)->get('/staff/dashboard')->assertDontSee('Staff Performance', false);
     }
 
@@ -290,11 +380,17 @@ class RoleAuthTest extends TestCase
 
     public function test_master_data_modules_are_admin_only(): void
     {
-        $staff = $this->makeUser('staff');
         $admin = $this->makeUser('admin');
 
+        foreach (['sales-clerk', 'technician'] as $role) {
+            $user = $this->makeUser($role);
+
+            foreach (['/categories', '/categories/add', '/suppliers', '/suppliers/add', '/service-types', '/service-types/add'] as $url) {
+                $this->actingAs($user)->get($url)->assertForbidden();
+            }
+        }
+
         foreach (['/categories', '/categories/add', '/suppliers', '/suppliers/add', '/service-types', '/service-types/add'] as $url) {
-            $this->actingAs($staff)->get($url)->assertForbidden();
             $this->actingAs($admin)->get($url)->assertOk();
         }
     }
@@ -337,7 +433,7 @@ class RoleAuthTest extends TestCase
     public function test_repair_ticket_accepts_empty_optional_fields(): void
     {
         $admin = $this->makeUser('admin');
-        $tech = $this->makeUser('staff');
+        $tech = $this->makeUser('technician');
 
         $response = $this->actingAs($admin)->post('/repair-management', [
             'customer_name' => 'QA Customer',

@@ -106,7 +106,7 @@ class DashboardController extends Controller
             ->values();
 
         $staffRole = $request->query('staff_role', 'all');
-        if (in_array($staffRole, ['admin', 'staff'], true)) {
+        if (in_array($staffRole, ['admin', 'technician', 'sales-clerk'], true)) {
             $staffPerformance = $staffPerformance->where('role', $staffRole)->values();
         } else {
             $staffRole = 'all';

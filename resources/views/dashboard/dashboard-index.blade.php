@@ -34,10 +34,12 @@
                     Dashboard
                 </a>
 
+@if(auth()->check() && auth()->user()->canAccessPos())
                 <a href="{{ url('/pos') }}" class="nav-link">
                     <i class="fa-solid fa-cash-register"></i>
                     POS
                 </a>
+@endif
 
                 <p class="nav-group-label">MANAGEMENT</p>
                 <a href="{{ url('/repair-management') }}" class="nav-link ">
@@ -45,10 +47,12 @@
                     Repair Management
                 </a>
 
+@if(auth()->check() && auth()->user()->canViewTransactions())
                 <a href="{{ url('/transaction-history') }}" class="nav-link">
                     <i class="fa-regular fa-clipboard"></i>
                     Transaction History
                 </a>
+@endif
 
                 <a href="{{ url('/inventory') }}" class="nav-link">
                     <i class="fa-solid fa-box"></i>
@@ -403,12 +407,15 @@
 
                                 <td>
                                     <div class="actions">
-                                        @if($t->type === 'Retail')
+                                        @if($t->type === 'Retail' && auth()->check() && auth()->user()->canViewTransactions())
                                         <a href="{{ url('/sales/' . $t->record_id) }}" title="View receipt"><i class="fa-regular fa-file-lines"></i></a>
                                         <a href="{{ url('/sales/' . $t->record_id) }}?print=1" title="Print receipt"><i class="fa-solid fa-print"></i></a>
-                                        @else
+                                        @elseif($t->type !== 'Retail')
                                         <a href="{{ url('/repair-management/' . $t->record_id) }}" title="View ticket"><i class="fa-regular fa-file-lines"></i></a>
                                         <i class="fa-solid fa-print" style="opacity:.4" title="No receipt for repairs"></i>
+                                        @else
+                                        <i class="fa-regular fa-file-lines" style="opacity:.4" title="No receipt access"></i>
+                                        <i class="fa-solid fa-print" style="opacity:.4" title="No receipt access"></i>
                                         @endif
                                     </div>
                                 </td>
@@ -463,7 +470,8 @@
                             <select name="staff_role" onchange="this.form.submit()">
                                 <option value="all" {{ $staffRole === 'all' ? 'selected' : '' }}>Role: All</option>
                                 <option value="admin" {{ $staffRole === 'admin' ? 'selected' : '' }}>Admin</option>
-                                <option value="staff" {{ $staffRole === 'staff' ? 'selected' : '' }}>Staff</option>
+                                <option value="technician" {{ $staffRole === 'technician' ? 'selected' : '' }}>Technician</option>
+                                <option value="sales-clerk" {{ $staffRole === 'sales-clerk' ? 'selected' : '' }}>Sales Clerk</option>
                             </select>
                         </div>
                     </form>

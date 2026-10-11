@@ -752,7 +752,8 @@ td {
     color: var(--role-manager-text);
 }
 
-.role-badge.manager {
+.role-badge.manager,
+.role-badge.admin {
     background: var(--role-manager-bg);
     color: var(--role-manager-text);
 }
@@ -767,7 +768,8 @@ td {
     color: var(--role-clerk-text);
 }
 
-.role-badge.secretary {
+.role-badge.secretary,
+.role-badge.staff {
     background: var(--role-secretary-bg);
     color: var(--role-secretary-text);
 }

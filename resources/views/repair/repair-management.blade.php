@@ -34,10 +34,12 @@
                     Dashboard
                 </a>
 
+@if(auth()->check() && auth()->user()->canAccessPos())
                 <a href="{{ url('/pos') }}" class="nav-link">
                     <i class="fa-solid fa-cash-register"></i>
                     POS
                 </a>
+@endif
 
                 <p class="nav-group-label">MANAGEMENT</p>
                 <a href="{{ url('/repair-management') }}" class="nav-link active">
@@ -45,10 +47,12 @@
                     Repair Management
                 </a>
 
+@if(auth()->check() && auth()->user()->canViewTransactions())
                 <a href="{{ url('/transaction-history') }}" class="nav-link">
                     <i class="fa-regular fa-clipboard"></i>
                     Transaction History
                 </a>
+@endif
 
                 <a href="{{ url('/inventory') }}" class="nav-link">
                     <i class="fa-solid fa-box"></i>
@@ -247,6 +251,7 @@
                                         <a href="{{ url('/repair-management/' . $repair->id . '/edit') }}" class="btn-icon" title="Edit Ticket">
                                             <i class="fa-solid fa-pen"></i>
                                         </a>
+@if(auth()->check() && auth()->user()->isAdmin())
                                         <form action="{{ url('/repair-management/' . $repair->id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Delete this repair ticket? This action cannot be undone.');">
                                             @csrf
                                             @method('DELETE')
@@ -254,6 +259,7 @@
                                                 <i class="fa-regular fa-trash-can"></i>
                                             </button>
                                         </form>
+@endif
                                     </div>
                                 </td>
                             </tr>

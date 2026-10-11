@@ -36,14 +36,41 @@ class User extends Authenticatable
         return $this->role === 'admin';
     }
 
+    public function isTechnician(): bool
+    {
+        return $this->role === 'technician';
+    }
+
+    public function isSalesClerk(): bool
+    {
+        // Legacy 'staff' rows (created before the three-role migration)
+        // keep clerk-level access.
+        return $this->role === 'sales-clerk' || $this->role === 'staff';
+    }
+
     public function isStaff(): bool
     {
-        return $this->role === 'staff';
+        return $this->isTechnician() || $this->isSalesClerk();
+    }
+
+    public function canAccessPos(): bool
+    {
+        return $this->isAdmin() || $this->isSalesClerk();
+    }
+
+    public function canViewTransactions(): bool
+    {
+        return $this->isAdmin() || $this->isSalesClerk();
     }
 
     public function roleLabel(): string
     {
-        return $this->role === 'admin' ? 'Admin' : 'Staff';
+        return match ($this->role) {
+            'admin' => 'Admin',
+            'technician' => 'Technician',
+            'sales-clerk' => 'Sales Clerk',
+            default => 'Staff',
+        };
     }
 
     public function assignedRepairTickets()
