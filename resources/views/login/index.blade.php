@@ -9,8 +9,8 @@
     <!-- Inter Font -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
-    <!-- Stylesheet -->
-    <link rel="stylesheet" href="{{ asset('css/login.css') }}">
+    <!-- Stylesheet (?v=2 cache-bust so login styling refreshes after updates) -->
+    <link rel="stylesheet" href="{{ asset('css/login.css') }}?v=2">
 </head>
 
 <body>
