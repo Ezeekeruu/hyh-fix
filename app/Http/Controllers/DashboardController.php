@@ -57,7 +57,7 @@ class DashboardController extends Controller
             ->sum('final_price');
 
         $todaySales    = $salesToday + $repairsToday;
-        $lowStockCount = Product::whereColumn('stock_quantity', '<=', 'low_stock_threshold')->count();
+        $lowStockCount = Product::active()->whereColumn('stock_quantity', '<=', 'low_stock_threshold')->count();
 
         // ---- Sales Overview chart (Chart.js): retail vs repair bars + total line ----
         $chart = [

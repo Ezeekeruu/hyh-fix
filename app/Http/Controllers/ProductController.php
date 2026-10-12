@@ -23,13 +23,20 @@ class ProductController extends Controller
         // Fetch all categories for the filter dropdown
         $categories = Category::orderBy('category_name')->get();
 
-        // Global counts for stat cards across all pages
-        $totalProducts = Product::count();
-        $lowStockCount = Product::where('stock_quantity', '>', 0)->whereColumn('stock_quantity', '<=', 'low_stock_threshold')->count();
-        $outOfStockCount = Product::where('stock_quantity', '<=', 0)->count();
+        // Global counts for stat cards across all pages (archived items excluded).
+        $totalProducts = Product::active()->count();
+        $lowStockCount = Product::active()->where('stock_quantity', '>', 0)->whereColumn('stock_quantity', '<=', 'low_stock_threshold')->count();
+        $outOfStockCount = Product::active()->where('stock_quantity', '<=', 0)->count();
 
-        // Build query with relationships
+        // Build query with relationships (archived items live behind the
+        // 'archived' status filter instead of the normal list).
         $query = Product::with(['category', 'supplier']);
+
+        if (($request->input('status') ?? 'all') === 'archived') {
+            $query->archived();
+        } else {
+            $query->active();
+        }
 
         // 1. Filter by Search Query
         if ($request->filled('search')) {
@@ -381,32 +388,46 @@ class ProductController extends Controller
 
 
     // =========================================================
-    // 7. DELETE A PRODUCT
+    // 7. ARCHIVE A PRODUCT (no hard deletes — sale history points here)
     // =========================================================
     public function destroy($id)
     {
-        // Find the product that we want to delete.
+        // Find the product that we want to archive.
         //
         // If the product does not exist, Laravel returns 404.
         $product = Product::findOrFail($id);
 
 
-        // Remove the product's image file from storage, if it has one.
-        if ($product->image_path) {
-            Storage::disk('s3')->delete($product->image_path);
-        }
+        // Archive instead of deleting: the row (and its image) stays so
+        // past sales, receipts, and reports keep working. The product
+        // simply disappears from the normal list, POS, and stock alerts.
+        $product->archived_at = now();
+        $product->save();
 
 
-        // Delete the product from the products table.
-        $product->delete();
-
-
-        // After deleting the product,
+        // After archiving the product,
         // return to the product list.
         return redirect()
             ->route('products.index')
 
             // Display a success message.
-            ->with('success', 'Product deleted successfully.');
+            ->with('success', 'Product archived successfully.');
+    }
+
+
+    // =========================================================
+    // 8. RESTORE AN ARCHIVED PRODUCT
+    // =========================================================
+    public function restore($id)
+    {
+        $product = Product::findOrFail($id);
+
+        $product->archived_at = null;
+        $product->save();
+
+        return redirect()
+            ->route('products.index', ['status' => 'archived'])
+
+            ->with('success', 'Product restored successfully.');
     }
 }

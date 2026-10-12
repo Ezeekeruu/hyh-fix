@@ -16,13 +16,30 @@ class Product extends Model
         'stock_quantity',
         'low_stock_threshold',
         'image_path',
+        'archived_at',
     ];
 
     protected $casts = [
         'cost_price' => 'decimal:2',
         'sell_price' => 'decimal:2',
         'low_stock_threshold' => 'integer',
+        'archived_at' => 'datetime',
     ];
+
+    public function isArchived(): bool
+    {
+        return $this->archived_at !== null;
+    }
+
+    public function scopeActive($query)
+    {
+        return $query->whereNull('archived_at');
+    }
+
+    public function scopeArchived($query)
+    {
+        return $query->whereNotNull('archived_at');
+    }
 
     // Returns a ready-to-use image URL, or null if no image was uploaded.
     // Built from config only (never boots the S3 client) so pages render

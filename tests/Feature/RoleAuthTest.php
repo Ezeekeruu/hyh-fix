@@ -596,6 +596,76 @@ class RoleAuthTest extends TestCase
         $inStock->assertDontSee('Custom Low', false);
     }
 
+    public function test_product_archive_hides_and_restores(): void
+    {
+        $admin = $this->makeUser('admin');
+        $category = Category::create(['category_name' => 'QA Cat']);
+        $supplier = Supplier::create(['supplier_name' => 'QA Sup', 'contact_info' => 'QA Contact', 'location' => 'QA Location']);
+        $product = Product::create([
+            'product_name' => 'QA Archive Me',
+            'sku' => 'QA-AR-001',
+            'category_id' => $category->id,
+            'supplier_id' => $supplier->id,
+            'cost_price' => 10,
+            'sell_price' => 13,
+            'stock_quantity' => 5,
+            'low_stock_threshold' => 10,
+        ]);
+
+        $this->actingAs($admin)->delete('/inventory/'.$product->id)->assertRedirect('/inventory');
+        $this->assertNotNull($product->fresh()->archived_at);
+
+        $list = $this->actingAs($admin)->get('/inventory');
+        $list->assertOk();
+        $list->assertDontSee('QA Archive Me', false);
+
+        $archived = $this->actingAs($admin)->get('/inventory?status=archived');
+        $archived->assertOk();
+        $archived->assertSee('QA Archive Me', false);
+
+        $this->actingAs($admin)->post('/inventory/'.$product->id.'/restore')->assertRedirect();
+        $this->assertNull($product->fresh()->archived_at);
+
+        $back = $this->actingAs($admin)->get('/inventory');
+        $back->assertSee('QA Archive Me', false);
+    }
+
+    public function test_archiving_sold_product_keeps_history(): void
+    {
+        $this->seed(SampleDataSeeder::class);
+        $admin = User::where('email', 'test@example.com')->firstOrFail();
+        $product = Product::where('sku', 'GLS-IP13-006')->firstOrFail();
+        $this->assertGreaterThan(0, $product->saleItems()->count());
+
+        $this->actingAs($admin)->delete('/inventory/'.$product->id)->assertRedirect('/inventory');
+        $this->assertNotNull($product->fresh()->archived_at);
+        $this->assertGreaterThan(0, $product->fresh()->saleItems()->count());
+    }
+
+    public function test_pos_rejects_archived_product(): void
+    {
+        $admin = $this->makeUser('admin');
+        $category = Category::create(['category_name' => 'QA Cat']);
+        $supplier = Supplier::create(['supplier_name' => 'QA Sup', 'contact_info' => 'QA Contact', 'location' => 'QA Location']);
+        $product = Product::create([
+            'product_name' => 'QA Retired',
+            'sku' => 'QA-AR-002',
+            'category_id' => $category->id,
+            'supplier_id' => $supplier->id,
+            'cost_price' => 10,
+            'sell_price' => 13,
+            'stock_quantity' => 5,
+            'low_stock_threshold' => 10,
+            'archived_at' => now(),
+        ]);
+
+        $this->actingAs($admin)->post('/pos', [
+            'payment_method' => 'Cash',
+            'products' => [['id' => $product->id, 'quantity' => 1]],
+        ])->assertSessionHasErrors('products.0.id');
+        $this->assertDatabaseMissing('sales', ['payment_method' => 'Cash']);
+    }
+
     public function test_master_data_lists_paginate(): void
     {
         $admin = $this->makeUser('admin');

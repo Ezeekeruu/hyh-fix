@@ -226,6 +226,7 @@
                                 <option value="in_stock" {{ request('status') == 'in_stock' ? 'selected' : '' }}>In Stock</option>
                                 <option value="low_stock" {{ request('status') == 'low_stock' ? 'selected' : '' }}>Low Stock</option>
                                 <option value="out_of_stock" {{ request('status') == 'out_of_stock' ? 'selected' : '' }}>Out of Stock</option>
+                                <option value="archived" {{ request('status') == 'archived' ? 'selected' : '' }}>Archived</option>
                             </select>
                         </div>
 
@@ -288,7 +289,9 @@
                                 <td class="stock-cell">{{ $product->stock_quantity }}</td>
                                 <td class="price-cell">₱{{ number_format($product->sell_price, 2) }}</td>
                                 <td>
-                                    @if($product->stock_quantity <= 0)
+                                    @if($product->archived_at)
+                                        <span class="status-badge out-of-stock">Archived</span>
+                                        @elseif($product->stock_quantity <= 0)
                                         <span class="status-badge out-of-stock">Out of Stock</span>
                                         @elseif($product->stock_quantity <= $product->low_stock_threshold)
                                             <span class="status-badge low-stock">Low Stock</span>
@@ -299,12 +302,19 @@
 @if(auth()->check() && auth()->user()->isAdmin())
                                 <td>
                                     <div class="action-buttons">
+                                        @if($product->archived_at)
+                                        <form action="{{ route('products.restore', $product->id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Restore this product to the inventory?');">
+                                            @csrf
+                                            <button class="btn-icon" type="submit" title="Restore"><i class="fa-solid fa-trash-can-arrow-up"></i></button>
+                                        </form>
+                                        @else
                                         <a href="{{ route('products.edit', $product->id) }}" class="btn-icon" title="Edit"><i class="fa-solid fa-pen"></i></a>
-                                        <form action="{{ route('products.destroy', $product->id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this product?');">
+                                        <form action="{{ route('products.destroy', $product->id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Archive this product? It will be hidden from the list, POS, and stock alerts, but past records are kept.');">
                                             @csrf
                                             @method('DELETE')
-                                            <button class="btn-icon danger" type="submit" title="Delete"><i class="fa-regular fa-trash-can"></i></button>
+                                            <button class="btn-icon danger" type="submit" title="Archive"><i class="fa-solid fa-box-archive"></i></button>
                                         </form>
+                                        @endif
                                     </div>
                                 </td>
                                 @endif

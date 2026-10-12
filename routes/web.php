@@ -70,6 +70,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/inventory/{id}/edit', [ProductController::class, 'edit'])->name('products.edit');
         Route::put('/inventory/{id}', [ProductController::class, 'update'])->name('products.update');
         Route::delete('/inventory/{id}', [ProductController::class, 'destroy'])->name('products.destroy');
+        Route::post('/inventory/{id}/restore', [ProductController::class, 'restore'])->name('products.restore');
 
         // Master data — each with its own module page + table.
         Route::get('/categories', [CategoryController::class, 'index'])->name('categories.index');

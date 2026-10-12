@@ -119,7 +119,7 @@ class ReportController extends Controller
                 SUM(sale_items.quantity * sale_items.unit_price) as sales_amount
             ');
 
-        $slowMovingProducts = Product::leftJoinSub($soldPerProduct, 'sold', 'sold.product_id', '=', 'products.id')
+        $slowMovingProducts = Product::active()->leftJoinSub($soldPerProduct, 'sold', 'sold.product_id', '=', 'products.id')
             ->where('products.stock_quantity', '>', 0)
             ->whereRaw('COALESCE(sold.qty_sold, 0) <= ?', [self::SLOW_MOVING_MAX_QTY])
             ->select(
@@ -160,12 +160,12 @@ class ReportController extends Controller
         |--------------------------------------------------------------------------
         */
 
-        $totalProducts = Product::count();
-        $inStock       = Product::whereColumn('stock_quantity', '>', 'low_stock_threshold')->count();
-        $lowStock      = Product::where('stock_quantity', '>', 0)
+        $totalProducts = Product::active()->count();
+        $inStock       = Product::active()->whereColumn('stock_quantity', '>', 'low_stock_threshold')->count();
+        $lowStock      = Product::active()->where('stock_quantity', '>', 0)
             ->whereColumn('stock_quantity', '<=', 'low_stock_threshold')
             ->count();
-        $outOfStock    = Product::where('stock_quantity', '<=', 0)->count();
+        $outOfStock    = Product::active()->where('stock_quantity', '<=', 0)->count();
 
         /*
         |--------------------------------------------------------------------------

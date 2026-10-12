@@ -10,6 +10,7 @@ use App\Models\SaleItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 
@@ -37,8 +38,9 @@ class SaleController extends Controller
         // Get all categories for the POS dropdown filter
         $categories = Category::orderBy('category_name')->get();
 
-        // Get available products with their category relationship loaded
+        // Get available (non-archived) products with their category relationship loaded
         $products = Product::with('category')
+            ->active()
             ->where('stock_quantity', '>', 0)
             ->orderBy('product_name')
             ->get();
@@ -83,9 +85,11 @@ class SaleController extends Controller
 
 
             // Every product in the array must have
-            // a valid product ID.
-            'products.*.id' =>
-            'required|exists:products,id',
+            // a valid, non-archived product ID.
+            'products.*.id' => [
+                'required',
+                Rule::exists('products', 'id')->whereNull('archived_at'),
+            ],
 
 
             // Every product must have a quantity.

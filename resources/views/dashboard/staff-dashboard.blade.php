@@ -287,7 +287,7 @@
 
                     <div class="stock-list">
                         @php
-                        $lowStockProducts = \App\Models\Product::whereColumn('stock_quantity', '<=', 'low_stock_threshold')
+                        $lowStockProducts = \App\Models\Product::active()->whereColumn('stock_quantity', '<=', 'low_stock_threshold')
                             ->orderBy('stock_quantity')
                             ->get();
                             @endphp
