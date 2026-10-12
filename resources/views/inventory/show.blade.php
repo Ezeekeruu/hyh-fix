@@ -138,6 +138,13 @@
 
             <!-- Detail Card -->
             <div class="form-page-wrapper">
+                @if(session('success'))
+                <div class="alert-success">
+                    <i class="fa-solid fa-circle-check"></i>
+                    {{ session('success') }}
+                </div>
+                @endif
+
                 <section class="form-card">
                     <div class="form-card-header">
                         <div class="form-card-icon">
@@ -189,11 +196,69 @@
                     <div class="form-actions">
                         <a href="{{ route('products.index') }}" class="btn-cancel">Back to Inventory</a>
 @if(auth()->check() && auth()->user()->isAdmin())
+                        <a href="{{ route('products.stock-in', ['product_id' => $product->id]) }}" class="btn-add-product" style="text-decoration: none;" title="Record incoming stock">
+                            <i class="fa-solid fa-boxes-stacked"></i>
+                            Stock In
+                        </a>
                         <a href="{{ route('products.edit', $product->id) }}" class="btn-add-product" style="text-decoration: none;">
                             <i class="fa-solid fa-pen"></i>
                             Edit Product
                         </a>
 @endif
+                    </div>
+                </section>
+
+                <!-- Stock Movement History (full detail report) -->
+                <section class="form-card" style="margin-top: 24px;">
+                    <div class="form-card-header">
+                        <div class="form-card-icon">
+                            <i class="fa-solid fa-clock-rotate-left"></i>
+                        </div>
+                        <div>
+                            <h3>Stock Movement History</h3>
+                            <p>Every stock-in, sale, and restock for this product, newest first.</p>
+                        </div>
+                    </div>
+
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>DATE</th>
+                                    <th>TYPE</th>
+                                    <th>QTY</th>
+                                    @if(auth()->check() && auth()->user()->isAdmin())
+                                    <th>UNIT COST</th>
+                                    @endif
+                                    <th>BY</th>
+                                    <th>NOTES</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($movements as $movement)
+                                <tr>
+                                    <td>{{ $movement->created_at ? $movement->created_at->format('M d, Y h:i A') : 'N/A' }}</td>
+                                    <td>
+                                        @if($movement->type === 'in')
+                                        <span class="status-badge in-stock">Stock In</span>
+                                        @else
+                                        <span class="status-badge low-stock">Stock Out</span>
+                                        @endif
+                                    </td>
+                                    <td class="stock-cell">{{ $movement->type === 'in' ? '+' : '−' }}{{ number_format($movement->quantity) }}</td>
+                                    @if(auth()->check() && auth()->user()->isAdmin())
+                                    <td class="price-cell">{{ $movement->unit_cost !== null ? '₱' . number_format($movement->unit_cost, 2) : '—' }}</td>
+                                    @endif
+                                    <td>{{ $movement->user?->name ?? 'System' }}</td>
+                                    <td>{{ $movement->notes ?? '—' }}</td>
+                                </tr>
+                                @empty
+                                <tr>
+                                    <td colspan="{{ auth()->check() && auth()->user()->isAdmin() ? 6 : 5 }}" style="text-align: center; padding: 20px; color: #6b7280;">No stock movements recorded yet.</td>
+                                </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
                     </div>
                 </section>
             </div>
