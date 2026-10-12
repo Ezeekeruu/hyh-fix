@@ -248,7 +248,7 @@
                                 </td>
                                 <td>
                                     <div class="action-buttons" style="display: flex; justify-content: center; align-items: center; gap: 8px;">
-                                        <a href="{{ url('/repair-management/' . $repair->id . '/edit') }}" class="btn-icon primary" title="Edit Ticket">
+                                        <a href="{{ url('/repair-management/' . $repair->id . '/edit') }}" class="btn-icon" title="Edit Ticket">
                                             <i class="fa-solid fa-pen"></i>
                                         </a>
 @if(auth()->check() && auth()->user()->isAdmin())

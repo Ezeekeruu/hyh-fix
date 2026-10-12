@@ -7,7 +7,6 @@ use App\Models\Customer;
 use App\Models\Product;
 use App\Models\Sale;
 use App\Models\SaleItem;
-use App\Models\StockMovement;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -309,18 +308,6 @@ class SaleController extends Controller
                 $product->save();
 
 
-                // Log the stock-out so the product detail report
-                // shows exactly what left, when, and by whom.
-                StockMovement::record(
-                    $product->id,
-                    'out',
-                    $item['quantity'],
-                    (float) $product->cost_price,
-                    Auth::id(),
-                    'POS sale'
-                );
-
-
                 // =================================================
                 // ADD SUBTOTAL TO TOTAL
                 // =================================================
@@ -484,16 +471,6 @@ class SaleController extends Controller
 
                     // Save the restored stock.
                     $product->save();
-
-                    // Log the restock (voided sale) for the detail report.
-                    StockMovement::record(
-                        $product->id,
-                        'in',
-                        $item->quantity,
-                        (float) $product->cost_price,
-                        Auth::id(),
-                        'Voided sale restock'
-                    );
                 }
             }
 
@@ -575,17 +552,6 @@ class SaleController extends Controller
 
                     // Save the restored stock.
                     $product->save();
-
-
-                    // Log the restock (deleted sale) for the detail report.
-                    StockMovement::record(
-                        $product->id,
-                        'in',
-                        $item->quantity,
-                        (float) $product->cost_price,
-                        Auth::id(),
-                        'Deleted sale restock'
-                    );
                 }
             }
 

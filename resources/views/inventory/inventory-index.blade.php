@@ -191,13 +191,6 @@
 
             <!-- Table Container Card -->
             <section class="inventory-card">
-                @if(session('success'))
-                <div class="alert-success">
-                    <i class="fa-solid fa-circle-check"></i>
-                    {{ session('success') }}
-                </div>
-                @endif
-
                 <!-- Search, Filter & Action Bar -->
                 <!-- Search, Filter & Action Bar -->
                 <div class="inventory-actions-bar">
@@ -243,13 +236,8 @@
                         </a>
 
 @if(auth()->check() && auth()->user()->isAdmin())
-                        <!-- 5. Stock In Button -->
-                        <a href="{{ route('products.stock-in') }}" class="btn-add-product" style="margin-left: auto; text-decoration: none;" title="Record incoming stock">
-                            <i class="fa-solid fa-boxes-stacked"></i>
-                            Stock In
-                        </a>
-                        <!-- 6. Add New Item Button -->
-                        <a href="{{ url('/inventory/add') }}" class="btn-add-product" style="text-decoration: none;">
+                        <!-- 5. Add New Item Button -->
+                        <a href="{{ url('/inventory/add') }}" class="btn-add-product" style="margin-left: auto; text-decoration: none;">
                             <i class="fa-solid fa-plus"></i>
                             Add New Item
                         </a>
@@ -302,7 +290,7 @@
                                 <td class="price-cell">₱{{ number_format($product->sell_price, 2) }}</td>
                                 <td>
                                     @if($product->archived_at)
-                                        <span class="status-badge archived">Archived</span>
+                                        <span class="status-badge out-of-stock">Archived</span>
                                         @elseif($product->stock_quantity <= 0)
                                         <span class="status-badge out-of-stock">Out of Stock</span>
                                         @elseif($product->stock_quantity <= $product->low_stock_threshold)
@@ -317,12 +305,10 @@
                                         @if($product->archived_at)
                                         <form action="{{ route('products.restore', $product->id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Restore this product to the inventory?');">
                                             @csrf
-                                            <button class="btn-icon success" type="submit" title="Restore"><i class="fa-solid fa-trash-can-arrow-up"></i></button>
+                                            <button class="btn-icon" type="submit" title="Restore"><i class="fa-solid fa-trash-can-arrow-up"></i></button>
                                         </form>
                                         @else
-                                        <a href="{{ route('products.show', $product->id) }}" class="btn-icon primary" title="View details"><i class="fa-regular fa-eye"></i></a>
-                                        <a href="{{ route('products.edit', $product->id) }}" class="btn-icon primary" title="Edit"><i class="fa-solid fa-pen"></i></a>
-                                        <a href="{{ route('products.stock-in', ['product_id' => $product->id]) }}" class="btn-icon success" title="Stock In"><i class="fa-solid fa-boxes-stacked"></i></a>
+                                        <a href="{{ route('products.edit', $product->id) }}" class="btn-icon" title="Edit"><i class="fa-solid fa-pen"></i></a>
                                         <form action="{{ route('products.destroy', $product->id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Archive this product? It will be hidden from the list, POS, and stock alerts, but past records are kept.');">
                                             @csrf
                                             @method('DELETE')

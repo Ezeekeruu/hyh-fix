@@ -1341,8 +1341,7 @@ td {
     font-weight: 600;
 }
 
-.role-badge.tech,
-.role-badge.technician {
+.role-badge.tech {
     background: var(--primary);
     color: #fff;
 }
@@ -1352,19 +1351,12 @@ td {
     color: var(--primary);
 }
 
-.role-badge.clerk,
-.role-badge.sales-clerk {
+.role-badge.clerk {
     background: #d1fae5;
     color: #047857;
 }
 
-.role-badge.admin {
-    background: var(--primary);
-    color: #fff;
-}
-
-.role-badge.secretary,
-.role-badge.staff {
+.role-badge.secretary {
     background: #f3f4f6;
     color: #4b5563;
 }
