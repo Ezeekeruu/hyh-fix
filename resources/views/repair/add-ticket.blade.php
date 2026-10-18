@@ -265,8 +265,16 @@
                         <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 20px; align-items: start;">
                             <div>
                                 <label style="display: block; font-size: 12px; font-weight: 600; color: var(--text-main); margin-bottom: 6px;">Upload Device Photos</label>
-                                <input type="file" name="photos[]" multiple accept="image/png, image/jpeg, image/webp" onchange="previewPhotos(event)" style="font-size: 13px; color: var(--text-muted);">
-                                <small style="display: block; color: var(--text-muted); margin-top: 4px; font-size: 11px;">Select multiple photos. Formats: JPG, PNG, WEBP (Max 5MB each)</small>
+                                <div id="photo-inputs-container">
+                                    <div class="photo-input-group" style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                                        <input type="file" name="photos[]" multiple accept="image/png, image/jpeg, image/webp" onchange="previewPhotos(event)" style="flex: 1; font-size: 13px; color: var(--text-muted);">
+                                        <button type="button" onclick="removePhotoInput(this)" class="btn-icon" style="padding: 4px; color: #ef4444;" title="Remove this photo input"><i class="fa-regular fa-trash-can"></i></button>
+                                    </div>
+                                </div>
+                                <button type="button" onclick="addPhotoInput()" style="margin-top: 8px; padding: 6px 12px; border: 1px dashed var(--border-color); border-radius: 8px; background: #fff; color: var(--primary); font-size: 12px; font-weight: 600; cursor: pointer;">
+                                    <i class="fa-solid fa-plus"></i> Add More Photos
+                                </button>
+                                <small style="display: block; color: var(--text-muted); margin-top: 4px; font-size: 11px;">Select multiple photos per input. Formats: JPG, PNG, WEBP (Max 5MB each)</small>
                             </div>
 
                             <div>
@@ -307,21 +315,50 @@
             const placeholder = document.getElementById('preview-placeholder');
             const files = event.target.files;
 
+            // Clear and rebuild preview from all file inputs so the full series shows
             container.innerHTML = '';
 
-            if (files && files.length > 0) {
-                Array.from(files).forEach(file => {
-                    const img = document.createElement('img');
-                    img.src = URL.createObjectURL(file);
-                    img.style.width = '70px';
-                    img.style.height = '70px';
-                    img.style.objectFit = 'cover';
-                    img.style.borderRadius = '6px';
-                    img.style.border = '1px solid #e5e7eb';
-                    container.appendChild(img);
-                });
-            } else {
+            const allInputs = document.querySelectorAll('input[name="photos[]"]');
+            let hasFiles = false;
+
+            allInputs.forEach(input => {
+                if (input.files && input.files.length > 0) {
+                    hasFiles = true;
+                    Array.from(input.files).forEach(file => {
+                        const img = document.createElement('img');
+                        img.src = URL.createObjectURL(file);
+                        img.style.width = '70px';
+                        img.style.height = '70px';
+                        img.style.objectFit = 'cover';
+                        img.style.borderRadius = '6px';
+                        img.style.border = '1px solid #e5e7eb';
+                        container.appendChild(img);
+                    });
+                }
+            });
+
+            if (!hasFiles) {
                 container.appendChild(placeholder);
+            }
+        }
+
+        function addPhotoInput() {
+            const container = document.getElementById('photo-inputs-container');
+            const group = document.createElement('div');
+            group.className = 'photo-input-group';
+            group.style.cssText = 'display: flex; align-items: center; gap: 8px; margin-bottom: 8px;';
+            group.innerHTML = `
+                <input type="file" name="photos[]" multiple accept="image/png, image/jpeg, image/webp" onchange="previewPhotos(event)" style="flex: 1; font-size: 13px; color: var(--text-muted);">
+                <button type="button" onclick="removePhotoInput(this)" class="btn-icon" style="padding: 4px; color: #ef4444;" title="Remove this photo input"><i class="fa-regular fa-trash-can"></i></button>
+            `;
+            container.appendChild(group);
+        }
+
+        function removePhotoInput(btn) {
+            const group = btn.closest('.photo-input-group');
+            if (group) {
+                group.remove();
+                previewPhotos({ target: { files: [] } });
             }
         }
     </script>

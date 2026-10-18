@@ -156,7 +156,12 @@
                         <input type="hidden" name="filter" value="{{ $filter }}">
                         <input type="hidden" name="start_date" value="{{ $startDate->toDateString() }}">
                         <input type="hidden" name="end_date" value="{{ $endDate->toDateString() }}">
+                    </form>
 
+                    <form method="GET" action="{{ url('/reports') }}" id="customRangeForm"
+                        class="custom-range-form {{ $filter === 'custom' ? 'show' : '' }} filters-inline">
+                        <input type="hidden" name="filter" value="custom">
+                        <label class="filter-label">Product</label>
                         <select name="product_id" onchange="this.form.submit()">
                             <option value="" {{ $selectedProduct ? '' : 'selected' }}>All Products</option>
                             @foreach($products as $p)
@@ -166,6 +171,7 @@
                             @endforeach
                         </select>
 
+                        <label class="filter-label">Service Type</label>
                         <select name="service_type" onchange="this.form.submit()">
                             <option value="" {{ $selectedServiceType ? '' : 'selected' }}>All Service Types</option>
                             @foreach($serviceTypes as $s)
@@ -174,13 +180,9 @@
                             </option>
                             @endforeach
                         </select>
-                    </form>
 
-                    <form method="GET" action="{{ url('/reports') }}" id="customRangeForm"
-                        class="custom-range-form {{ $filter === 'custom' ? 'show' : '' }}">
-                        <input type="hidden" name="filter" value="custom">
                         <input type="date" name="start_date" value="{{ $startDate->toDateString() }}" required>
-                        <span>to</span>
+                        <span class="date-sep">to</span>
                         <input type="date" name="end_date" value="{{ $endDate->toDateString() }}" required>
                         <button type="submit" class="apply-btn">Apply</button>
                     </form>
@@ -361,6 +363,62 @@
                 </div>
             </section>
             @endif
+
+            <!-- Full Detailed Transaction Report -->
+            <section class="analytics-card report-detail-section" style="margin-top: 24px;">
+                <div class="analytics-header">
+                    <div>
+                        <h2>All Transactions — {{ $rangeLabel }}</h2>
+                        <p>{{ $allTransactions->count() }} total records · Retail sales &amp; repair tickets</p>
+                    </div>
+                </div>
+                <div class="table-wrapper">
+                    <table class="report-table detail-table">
+                        <thead>
+                            <tr>
+                                <th>DATE &amp; TIME</th>
+                                <th>TYPE</th>
+                                <th>REF #</th>
+                                <th>CUSTOMER</th>
+                                <th>ITEM / DEVICE</th>
+                                <th class="num">QTY</th>
+                                <th class="num">AMOUNT</th>
+                                <th>STATUS</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($allTransactions as $txn)
+                            <tr>
+                                <td>{{ $txn->date_label }}</td>
+                                <td>
+                                    @if($txn->type === 'retail')
+                                    <span style="color:#2563eb; font-weight:600;">Retail</span>
+                                    @else
+                                    <span style="color:#1d4ed8; font-weight:600;">Repair</span>
+                                    @endif
+                                </td>
+                                <td>{{ $txn->ref }}</td>
+                                <td>{{ $txn->customer }}</td>
+                                <td>{{ $txn->item }}</td>
+                                <td class="num">{{ number_format($txn->qty) }}</td>
+                                <td class="num">₱{{ number_format($txn->amount, 2) }}</td>
+                                <td><span class="status-badge {{ $txn->status === 'Completed' ? 'in-stock' : 'low-stock' }}">{{ $txn->status }}</span></td>
+                            </tr>
+                            @empty
+                            <tr><td colspan="8" class="empty-row">No transactions found in the selected period.</td></tr>
+                            @endforelse
+                        </tbody>
+                        <tfoot>
+                            <tr class="total-row">
+                                <td colspan="5">TOTAL</td>
+                                <td class="num">{{ number_format($allTransactions->sum('qty')) }}</td>
+                                <td class="num">₱{{ number_format($allTransactions->sum('amount'), 2) }}</td>
+                                <td></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </section>
 
             <!-- Insight Row -->
             <section class="insight-row">

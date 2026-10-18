@@ -2,16 +2,16 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use App\Models\Sale;
-use App\Models\SaleItem;
 use App\Models\Product;
 use App\Models\RepairTicket;
+use App\Models\Sale;
+use App\Models\SaleItem;
 use App\Models\ServiceType;
 use App\Models\User;
-use Carbon\Carbon;
-use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class ReportController extends Controller
 {
@@ -35,7 +35,7 @@ class ReportController extends Controller
         $data['generatedBy'] = auth()->user()?->name ?? 'System';
 
         return Pdf::loadView('reports.reports-pdf', $data)
-            ->download('hyh-report-' . $data['startDate']->toDateString() . '-to-' . $data['endDate']->toDateString() . '.pdf');
+            ->download('hyh-report-'.$data['startDate']->toDateString().'-to-'.$data['endDate']->toDateString().'.pdf');
     }
 
     private function buildData(Request $request): array
@@ -44,7 +44,7 @@ class ReportController extends Controller
 
         $rangeLabel = $startDate->isSameDay($endDate)
             ? $startDate->format('M d, Y')
-            : $startDate->format('M d, Y') . ' – ' . $endDate->format('M d, Y');
+            : $startDate->format('M d, Y').' – '.$endDate->format('M d, Y');
 
         /*
         |--------------------------------------------------------------------------
@@ -60,14 +60,14 @@ class ReportController extends Controller
         $repairsQuery = fn () => RepairTicket::where('status', 'completed')
             ->whereBetween('date_completed', [$startDate, $endDate]);
 
-        $totalSales       = (float) $salesQuery()->sum('total_amount');
-        $salesCount       = $salesQuery()->count();
+        $totalSales = (float) $salesQuery()->sum('total_amount');
+        $salesCount = $salesQuery()->count();
 
-        $repairRevenue    = (float) $repairsQuery()->sum('final_price');
+        $repairRevenue = (float) $repairsQuery()->sum('final_price');
         $repairsCompleted = $repairsQuery()->count();
 
         $totalTransactions = $salesCount + $repairsCompleted;
-        $netRevenue        = $totalSales + $repairRevenue;
+        $netRevenue = $totalSales + $repairRevenue;
 
         // Profit (retail only): (selling price - product cost) x qty.
         // Repair tickets have no cost column in the schema, so no cost is invented for them.
@@ -162,11 +162,11 @@ class ReportController extends Controller
         */
 
         $totalProducts = Product::active()->count();
-        $inStock       = Product::active()->whereColumn('stock_quantity', '>', 'low_stock_threshold')->count();
-        $lowStock      = Product::active()->where('stock_quantity', '>', 0)
+        $inStock = Product::active()->whereColumn('stock_quantity', '>', 'low_stock_threshold')->count();
+        $lowStock = Product::active()->where('stock_quantity', '>', 0)
             ->whereColumn('stock_quantity', '<=', 'low_stock_threshold')
             ->count();
-        $outOfStock    = Product::active()->where('stock_quantity', '<=', 0)->count();
+        $outOfStock = Product::active()->where('stock_quantity', '<=', 0)->count();
 
         /*
         |--------------------------------------------------------------------------
@@ -175,15 +175,15 @@ class ReportController extends Controller
         */
 
         $staffPerformance = User::withCount([
-                'sales as completed_sales_count' => function ($q) use ($startDate, $endDate) {
-                    $q->where('status', 'completed')
-                        ->whereBetween('sale_date', [$startDate, $endDate]);
-                },
-                'assignedRepairTickets as completed_repairs_count' => function ($q) use ($startDate, $endDate) {
-                    $q->where('status', 'completed')
-                        ->whereBetween('date_completed', [$startDate, $endDate]);
-                },
-            ])
+            'sales as completed_sales_count' => function ($q) use ($startDate, $endDate) {
+                $q->where('status', 'completed')
+                    ->whereBetween('sale_date', [$startDate, $endDate]);
+            },
+            'assignedRepairTickets as completed_repairs_count' => function ($q) use ($startDate, $endDate) {
+                $q->where('status', 'completed')
+                    ->whereBetween('date_completed', [$startDate, $endDate]);
+            },
+        ])
             ->get()
             ->map(function ($user) use ($startDate, $endDate) {
                 $salesRevenue = $user->sales()
@@ -205,15 +205,15 @@ class ReportController extends Controller
             ->values();
 
         // ---- Product-specific report filter (admin picks one product) ----
-        $products            = Product::orderBy('product_name')->get();
-        $serviceTypes        = ServiceType::orderBy('name')->get();
-        $selectedProductId   = $request->input('product_id');
+        $products = Product::orderBy('product_name')->get();
+        $serviceTypes = ServiceType::orderBy('name')->get();
+        $selectedProductId = $request->input('product_id');
         $selectedServiceType = $request->input('service_type');
 
-        $productSales     = collect();
-        $productQtySold   = 0;
+        $productSales = collect();
+        $productQtySold = 0;
         $productSalesAmount = 0.0;
-        $selectedProduct  = null;
+        $selectedProduct = null;
 
         if ($selectedProductId) {
             $selectedProduct = Product::find($selectedProductId);
@@ -235,16 +235,16 @@ class ReportController extends Controller
                     )
                     ->orderBy('sales.sale_date', 'desc')
                     ->get();
-                $productSales     = $rows;
-                $productQtySold   = (int) $rows->sum('quantity');
+                $productSales = $rows;
+                $productQtySold = (int) $rows->sum('quantity');
                 $productSalesAmount = (float) $rows->sum('subtotal');
             }
         }
 
         // ---- Service-type-specific repair records ----
-        $repairRecords   = collect();
-        $repairCount     = 0;
-        $repairAmount    = 0.0;
+        $repairRecords = collect();
+        $repairCount = 0;
+        $repairAmount = 0.0;
 
         if ($selectedServiceType) {
             $repairRecords = RepairTicket::with(['device.customer'])
@@ -255,6 +255,48 @@ class ReportController extends Controller
             $repairCount = $repairRecords->count();
             $repairAmount = (float) $repairRecords->sum('final_price');
         }
+
+        // ---- Full detailed transaction list (all sales + repairs in range) ----
+        $allSales = Sale::with(['customer', 'saleItems.product'])
+            ->where('status', 'completed')
+            ->whereBetween('sale_date', [$startDate, $endDate])
+            ->orderBy('sale_date', 'desc')
+            ->get();
+
+        $allRepairs = RepairTicket::with(['device.customer'])
+            ->whereBetween('date_received', [$startDate, $endDate])
+            ->orderBy('date_received', 'desc')
+            ->get();
+
+        // Combine into unified timeline
+        $allTransactions = collect();
+        foreach ($allSales as $sale) {
+            $allTransactions->push((object) [
+                'type' => 'retail',
+                'date' => $sale->sale_date,
+                'date_label' => Carbon::parse($sale->sale_date)->format('M d, Y h:i A'),
+                'ref' => '#'.$sale->id,
+                'customer' => $sale->customer?->name ?? 'Walk-in',
+                'item' => $sale->saleItems->count() > 1 ? $sale->saleItems->first()->product->product_name.' (+'.($sale->saleItems->count() - 1).' more)' : ($sale->saleItems->first()->product->product_name ?? '—'),
+                'qty' => $sale->saleItems->sum('quantity'),
+                'amount' => $sale->total_amount,
+                'status' => 'Completed',
+            ]);
+        }
+        foreach ($allRepairs as $repair) {
+            $allTransactions->push((object) [
+                'type' => 'repair',
+                'date' => $repair->date_received,
+                'date_label' => $repair->date_received ? Carbon::parse($repair->date_received)->format('M d, Y') : 'N/A',
+                'ref' => '#'.$repair->id,
+                'customer' => $repair->device?->customer?->name ?? 'Walk-in',
+                'item' => ($repair->device?->brand ?? '—').' '.($repair->device?->model ?? '—'),
+                'qty' => 1,
+                'amount' => $repair->final_price ?? 0,
+                'status' => ucfirst(str_replace('_', ' ', $repair->status)),
+            ]);
+        }
+        $allTransactions = $allTransactions->sortByDesc('date')->values();
 
         // Last 8 weeks, retail vs repair revenue + total trajectory + insight
         // cards (same series shape as the dashboard Sales Overview, so the two
@@ -291,16 +333,19 @@ class ReportController extends Controller
             'insights' => $insights,
 
             // Product / service-type report filters.
-            'products'            => $products,
-            'serviceTypes'        => $serviceTypes,
-            'selectedProduct'     => $selectedProduct,
+            'products' => $products,
+            'serviceTypes' => $serviceTypes,
+            'selectedProduct' => $selectedProduct,
             'selectedServiceType' => $selectedServiceType,
-            'productSales'        => $productSales,
-            'productQtySold'      => $productQtySold,
-            'productSalesAmount'  => $productSalesAmount,
-            'repairRecords'       => $repairRecords,
-            'repairCount'         => $repairCount,
-            'repairAmount'        => $repairAmount,
+            'productSales' => $productSales,
+            'productQtySold' => $productQtySold,
+            'productSalesAmount' => $productSalesAmount,
+            'repairRecords' => $repairRecords,
+            'repairCount' => $repairCount,
+            'repairAmount' => $repairAmount,
+
+            // Full detailed transaction list.
+            'allTransactions' => $allTransactions,
         ];
     }
 
@@ -458,19 +503,19 @@ class ReportController extends Controller
     {
         $filter = $request->get('filter', 'month');
 
-        if (!in_array($filter, ['today', 'week', 'month', 'custom'], true)) {
+        if (! in_array($filter, ['today', 'week', 'month', 'custom'], true)) {
             $filter = 'month';
         }
 
         switch ($filter) {
             case 'today':
                 $start = Carbon::today();
-                $end   = Carbon::today()->endOfDay();
+                $end = Carbon::today()->endOfDay();
                 break;
 
             case 'week':
                 $start = Carbon::now()->startOfWeek();
-                $end   = Carbon::now()->endOfWeek();
+                $end = Carbon::now()->endOfWeek();
                 break;
 
             case 'custom':
@@ -493,7 +538,7 @@ class ReportController extends Controller
 
             default:
                 $start = Carbon::now()->startOfMonth();
-                $end   = Carbon::now()->endOfMonth();
+                $end = Carbon::now()->endOfMonth();
                 break;
         }
 
