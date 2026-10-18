@@ -181,9 +181,9 @@
                             @endforeach
                         </select>
 
-                        <input type="date" name="start_date" value="{{ $startDate->toDateString() }}" required>
+                        <input type="date" name="start_date" required>
                         <span class="date-sep">to</span>
-                        <input type="date" name="end_date" value="{{ $endDate->toDateString() }}" required>
+                        <input type="date" name="end_date" required>
                         <button type="submit" class="apply-btn">Apply</button>
                     </form>
                 </div>
