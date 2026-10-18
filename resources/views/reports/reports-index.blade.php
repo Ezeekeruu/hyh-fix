@@ -155,6 +155,14 @@
                             Custom Date
                         </button>
 
+                        <!-- Custom Date inputs - hidden by default, appear right after Custom Date button -->
+                        <div id="customDateBlock" style="display: none;">
+                            <input type="text" name="start_date" id="start_date_picker" placeholder="mm/dd/yyyy" required>
+                            <span class="date-sep">to</span>
+                            <input type="text" name="end_date" id="end_date_picker" placeholder="mm/dd/yyyy" required>
+                            <button type="submit" class="apply-btn">Apply</button>
+                        </div>
+
                         <!-- Keep current period/date range when filtering by product or service type -->
                         <input type="hidden" name="filter" value="{{ $filter }}">
                         <input type="hidden" name="start_date" id="start_date_input" value="{{ $startDate->toDateString() }}">
@@ -179,11 +187,6 @@
                             </option>
                             @endforeach
                         </select>
-
-                        <input type="text" name="start_date" id="start_date_picker" placeholder="mm/dd/yyyy" required>
-                        <span class="date-sep">to</span>
-                        <input type="text" name="end_date" id="end_date_picker" placeholder="mm/dd/yyyy" required>
-                        <button type="submit" class="apply-btn">Apply</button>
                     </form>
                 </div>
 
@@ -692,28 +695,14 @@
 
     <script>
         function toggleCustomDate() {
-            var form = document.getElementById('reportFilterForm');
-            var dateInputs = document.getElementById('start_date_picker');
-            var endInput = document.getElementById('end_date_picker');
-            var hiddenStart = document.getElementById('start_date_input');
-            var hiddenEnd = document.getElementById('end_date_input');
-
-            // Toggle visibility of date inputs
-            var isHidden = dateInputs.style.display === 'none' || dateInputs.style.display === '';
+            var block = document.getElementById('customDateBlock');
+            var isHidden = block.style.display === 'none';
             if (isHidden) {
-                dateInputs.style.display = 'inline-block';
-                endInput.style.display = 'inline-block';
-                document.querySelector('.date-sep').style.display = 'inline-block';
-                document.querySelector('.apply-btn').style.display = 'inline-block';
-                // Mark filter as custom
-                form.querySelector('input[name="filter"]').value = 'custom';
+                block.style.display = 'flex';
+                document.getElementById('reportFilterForm').querySelector('input[name="filter"]').value = 'custom';
             } else {
-                dateInputs.style.display = 'none';
-                endInput.style.display = 'none';
-                document.querySelector('.date-sep').style.display = 'none';
-                document.querySelector('.apply-btn').style.display = 'none';
-                // Reset to today when hiding custom dates
-                form.querySelector('input[name="filter"]').value = 'today';
+                block.style.display = 'none';
+                document.getElementById('reportFilterForm').querySelector('input[name="filter"]').value = 'today';
             }
         }
 

@@ -1568,13 +1568,63 @@ a.panel-btn {
     margin-left: 4px;
 }
 
-/* Hide custom date inputs by default (only show when Custom Date clicked) */
-#start_date_picker, #end_date_picker, .date-sep, .filters-inline .apply-btn {
+/* Custom date block - hidden by default, shown inline right after Custom Date button */
+#customDateBlock {
     display: none;
+    align-items: center;
+    gap: 6px;
 }
 
-.filter-label {
-    display: none;
+#customDateBlock input[type="text"] {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    color: #111827;
+    min-width: 130px;
+}
+
+#customDateBlock .date-sep {
+    color: #6b7280;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+#customDateBlock .apply-btn {
+    border: none;
+    background: var(--primary);
+    color: #fff;
+    padding: 9px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    margin-left: 4px;
+}
+
+/* FILTER BAR - inline product/service/date filters */
+.filters-inline {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #fff;
+    padding: 8px 14px;
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    font-size: 14px;
+    color: #4b5563;
+    flex-wrap: wrap;
+}
+
+.filters-inline .filter-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: #6b7280;
+    margin-right: 4px;
+    white-space: nowrap;
+    display: block;
 }
 
 /* DETAILED REPORT TABLES */
