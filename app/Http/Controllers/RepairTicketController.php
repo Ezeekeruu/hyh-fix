@@ -124,6 +124,9 @@ class RepairTicketController extends Controller
             'assigned_to'          => 'required|exists:users,id',
             'quotation_price'     => 'nullable|numeric|min:0',
 
+            // The clerk must confirm the problem description is accurate.
+            'confirm_problem_description' => 'required|accepted',
+
             // Photos
             'photos.*' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
         ]);
@@ -294,6 +297,10 @@ class RepairTicketController extends Controller
             // Problem description is required.
             'problem_description' =>
             'required|string',
+
+            // The clerk must confirm the problem description is accurate.
+            'confirm_problem_description' =>
+            'required|accepted',
 
 
             // Quotation price is optional

@@ -278,6 +278,14 @@
                         </div>
                     </div>
 
+                    <!-- Problem Description Confirmation -->
+                    <div style="margin: 20px 0 12px 0;">
+                        <label style="display: flex; align-items: flex-start; gap: 8px; font-size: 12px; font-weight: 600; color: var(--text-main); cursor: pointer;">
+                            <input type="checkbox" name="confirm_problem_description" value="1" {{ old('confirm_problem_description') ? 'checked' : '' }} style="margin-top: 2px; width: 16px; height: 16px; accent-color: var(--primary);">
+                            <span>I confirm the problem description above is accurate and complete.</span>
+                        </label>
+                    </div>
+
                     <!-- ACTION BUTTONS -->
                     <div style="display: flex; justify-content: flex-end; gap: 12px; padding-top: 16px; border-top: 1px solid var(--border-color);">
                         <a href="{{ route('repair-tickets.index') }}" style="height: 40px; padding: 0 20px; border-radius: 8px; border: 1px solid var(--border-color); background: #fff; color: var(--text-main); text-decoration: none; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; transition: background 0.2s;">

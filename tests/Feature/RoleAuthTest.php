@@ -323,6 +323,44 @@ class RoleAuthTest extends TestCase
         $response->assertSee('100.0% (of repair clients)', false);
     }
 
+    public function test_reports_product_filter_shows_product_sales(): void
+    {
+        $this->seed(SampleDataSeeder::class);
+        $admin = User::where('email', 'test@example.com')->firstOrFail();
+
+        $response = $this->actingAs($admin)->get('/reports?product_id=1');
+        $response->assertOk();
+        $response->assertSee('Product Sales', false);
+    }
+
+    public function test_reports_pdf_export_includes_product_filter(): void
+    {
+        $this->seed(SampleDataSeeder::class);
+        $admin = User::where('email', 'test@example.com')->firstOrFail();
+
+        $response = $this->actingAs($admin)->get('/reports/pdf?product_id=1');
+        $response->assertOk();
+        $response->assertHeader('content-type', 'application/pdf');
+    }
+
+    public function test_repair_store_requires_problem_confirmation(): void
+    {
+        $admin = $this->makeUser('admin');
+
+        $response = $this->actingAs($admin)->post('/repair-management', [
+            'customer_name' => 'QA Customer',
+            'phone_number' => '09000000001',
+            'brand' => 'QA Brand',
+            'model' => 'QA Model',
+            'service_type' => 'Screen Replacement',
+            'problem_description' => 'Cracked screen.',
+            'assigned_to' => $admin->id,
+        ]);
+
+        $response->assertSessionHasErrors('confirm_problem_description');
+        $this->assertDatabaseMissing('repair_tickets', ['problem_description' => 'Cracked screen.']);
+    }
+
     public function test_admin_dashboard_shows_staff_performance(): void
     {
         $this->seed(SampleDataSeeder::class);
@@ -446,6 +484,7 @@ class RoleAuthTest extends TestCase
             'problem_description' => null,
             'assigned_to' => $tech->id,
             'quotation_price' => null,
+            'confirm_problem_description' => '1',
         ]);
 
         $response->assertRedirect('/repair-management');
@@ -478,6 +517,7 @@ class RoleAuthTest extends TestCase
             'status' => 'in_progress',
             'date_received' => $ticket->date_received->format('Y-m-d H:i:s'),
             'date_completed' => null,
+            'confirm_problem_description' => '1',
         ]);
 
         $response->assertRedirect('/repair-management');

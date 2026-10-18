@@ -217,6 +217,14 @@
                             </div>
                         </div>
 
+                        <!-- Problem Description Confirmation -->
+                        <div style="margin: 14px 0 8px 0;">
+                            <label style="display: flex; align-items: flex-start; gap: 8px; font-size: 12px; font-weight: 600; color: var(--text-main); cursor: pointer;">
+                                <input type="checkbox" name="confirm_problem_description" value="1" {{ old('confirm_problem_description', $repairTicket->confirm_problem_description) ? 'checked' : '' }} style="margin-top: 2px; width: 16px; height: 16px; accent-color: var(--primary);">
+                                <span>I confirm the problem description above is accurate and complete.</span>
+                            </label>
+                        </div>
+
                         <div class="form-actions">
                             <a href="{{ route('repair-tickets.show', $repairTicket->id) }}" class="btn-cancel">Cancel</a>
                             <button type="submit" class="btn-add-product">

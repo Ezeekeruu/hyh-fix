@@ -151,6 +151,29 @@
                             <i class="fa-regular fa-calendar"></i>
                             Custom Date
                         </button>
+
+                        <!-- Keep current period/date range when filtering by product or service type -->
+                        <input type="hidden" name="filter" value="{{ $filter }}">
+                        <input type="hidden" name="start_date" value="{{ $startDate->toDateString() }}">
+                        <input type="hidden" name="end_date" value="{{ $endDate->toDateString() }}">
+
+                        <select name="product_id" onchange="this.form.submit()">
+                            <option value="" {{ $selectedProduct ? '' : 'selected' }}>All Products</option>
+                            @foreach($products as $p)
+                            <option value="{{ $p->id }}" {{ $selectedProduct && $selectedProduct->id == $p->id ? 'selected' : '' }}>
+                                {{ $p->product_name }}
+                            </option>
+                            @endforeach
+                        </select>
+
+                        <select name="service_type" onchange="this.form.submit()">
+                            <option value="" {{ $selectedServiceType ? '' : 'selected' }}>All Service Types</option>
+                            @foreach($serviceTypes as $s)
+                            <option value="{{ $s->name }}" {{ $selectedServiceType == $s->name ? 'selected' : '' }}>
+                                {{ $s->name }}
+                            </option>
+                            @endforeach
+                        </select>
                     </form>
 
                     <form method="GET" action="{{ url('/reports') }}" id="customRangeForm"
@@ -260,6 +283,84 @@
                 <!-- CHART: repairs vs retail revenue, last 8 weeks (Chart.js) -->
                 <div class="chart-placeholder" id="salesOverviewChart" style="position:relative;"><canvas id="salesChart"></canvas></div>
             </section>
+
+            @if($selectedProduct)
+            <!-- Product Sales Detail -->
+            <section class="analytics-card" style="margin-top: 24px;">
+                <div class="analytics-header">
+                    <div>
+                        <h2>Product Sales — {{ $selectedProduct->product_name }}</h2>
+                        <p>{{ $rangeLabel }} · SKU: {{ $selectedProduct->sku }} · Sold {{ $productQtySold }} unit{{ $productQtySold != 1 ? 's' : '' }} · ₱{{ number_format($productSalesAmount, 2) }}</p>
+                    </div>
+                </div>
+                <div class="table-wrapper">
+                    <table class="report-table">
+                        <thead>
+                            <tr>
+                                <th>DATE</th>
+                                <th>SALE #</th>
+                                <th>CUSTOMER</th>
+                                <th class="num">QTY</th>
+                                <th class="num">UNIT PRICE</th>
+                                <th class="num">SUBTOTAL</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($productSales as $item)
+                            <tr>
+                                <td>{{ \Carbon\Carbon::parse($item->sale_date)->format('M d, Y h:i A') }}</td>
+                                <td>#{{ $item->sale_id }}</td>
+                                <td>{{ $item->customer_name ?? 'Walk-in' }}</td>
+                                <td class="num">{{ number_format($item->quantity) }}</td>
+                                <td class="num">₱{{ number_format($item->unit_price, 2) }}</td>
+                                <td class="num">₱{{ number_format($item->subtotal, 2) }}</td>
+                            </tr>
+                            @empty
+                            <tr><td colspan="6" class="empty-row">No completed retail sales for this product in the selected period.</td></tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+            @endif
+
+            @if($selectedServiceType)
+            <!-- Service-Type Repair Detail -->
+            <section class="analytics-card" style="margin-top: 24px;">
+                <div class="analytics-header">
+                    <div>
+                        <h2>Repair Requests — {{ $selectedServiceType }}</h2>
+                        <p>{{ $rangeLabel }} · {{ $repairCount }} request{{ $repairCount != 1 ? 's' : '' }} · ₱{{ number_format($repairAmount, 2) }}</p>
+                    </div>
+                </div>
+                <div class="table-wrapper">
+                    <table class="report-table">
+                        <thead>
+                            <tr>
+                                <th>DATE RECEIVED</th>
+                                <th>CUSTOMER</th>
+                                <th>DEVICE</th>
+                                <th>STATUS</th>
+                                <th class="num">FINAL PRICE</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($repairRecords as $ticket)
+                            <tr>
+                                <td>{{ $ticket->date_received? \Carbon\Carbon::parse($ticket->date_received)->format('M d, Y') : 'N/A' }}</td>
+                                <td>{{ $ticket->device?->customer?->name ?? 'Walk-in' }}</td>
+                                <td>{{ $ticket->device?->brand }} {{ $ticket->device?->model }}</td>
+                                <td><span class="status-badge {{ str_replace('_', '-', $ticket->status) }}">{{ ucfirst(str_replace('_', ' ', $ticket->status)) }}</span></td>
+                                <td class="num">₱{{ number_format($ticket->final_price ?? 0, 2) }}</td>
+                            </tr>
+                            @empty
+                            <tr><td colspan="5" class="empty-row">No repair requests for this service type in the selected period.</td></tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+            @endif
 
             <!-- Insight Row -->
             <section class="insight-row">

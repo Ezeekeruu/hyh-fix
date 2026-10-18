@@ -7,6 +7,7 @@ use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Models\Product;
 use App\Models\RepairTicket;
+use App\Models\ServiceType;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -203,6 +204,58 @@ class ReportController extends Controller
             ->take(10)
             ->values();
 
+        // ---- Product-specific report filter (admin picks one product) ----
+        $products            = Product::orderBy('product_name')->get();
+        $serviceTypes        = ServiceType::orderBy('name')->get();
+        $selectedProductId   = $request->input('product_id');
+        $selectedServiceType = $request->input('service_type');
+
+        $productSales     = collect();
+        $productQtySold   = 0;
+        $productSalesAmount = 0.0;
+        $selectedProduct  = null;
+
+        if ($selectedProductId) {
+            $selectedProduct = Product::find($selectedProductId);
+            if ($selectedProduct) {
+                $rows = SaleItem::join('sales', 'sale_items.sale_id', '=', 'sales.id')
+                    ->join('products', 'sale_items.product_id', '=', 'products.id')
+                    ->leftJoin('customers', 'sales.customer_id', '=', 'customers.id')
+                    ->where('sales.status', 'completed')
+                    ->whereBetween('sales.sale_date', [$startDate, $endDate])
+                    ->where('products.id', $selectedProductId)
+                    ->select(
+                        'sales.sale_date',
+                        'sales.id as sale_id',
+                        'customers.name as customer_name',
+                        'products.product_name',
+                        'sale_items.quantity',
+                        'sale_items.unit_price',
+                        'sale_items.subtotal'
+                    )
+                    ->orderBy('sales.sale_date', 'desc')
+                    ->get();
+                $productSales     = $rows;
+                $productQtySold   = (int) $rows->sum('quantity');
+                $productSalesAmount = (float) $rows->sum('subtotal');
+            }
+        }
+
+        // ---- Service-type-specific repair records ----
+        $repairRecords   = collect();
+        $repairCount     = 0;
+        $repairAmount    = 0.0;
+
+        if ($selectedServiceType) {
+            $repairRecords = RepairTicket::with(['device.customer'])
+                ->whereBetween('created_at', [$startDate, $endDate])
+                ->where('service_type', $selectedServiceType)
+                ->orderBy('created_at', 'desc')
+                ->get();
+            $repairCount = $repairRecords->count();
+            $repairAmount = (float) $repairRecords->sum('final_price');
+        }
+
         // Last 8 weeks, retail vs repair revenue + total trajectory + insight
         // cards (same series shape as the dashboard Sales Overview, so the two
         // charts render identically; no Daily/Weekly/Monthly tabs here because
@@ -236,6 +289,18 @@ class ReportController extends Controller
             'staffPerformance' => $staffPerformance,
             'weeklySeries' => $weeklySeries,
             'insights' => $insights,
+
+            // Product / service-type report filters.
+            'products'            => $products,
+            'serviceTypes'        => $serviceTypes,
+            'selectedProduct'     => $selectedProduct,
+            'selectedServiceType' => $selectedServiceType,
+            'productSales'        => $productSales,
+            'productQtySold'      => $productQtySold,
+            'productSalesAmount'  => $productSalesAmount,
+            'repairRecords'       => $repairRecords,
+            'repairCount'         => $repairCount,
+            'repairAmount'        => $repairAmount,
         ];
     }
 
