@@ -890,19 +890,28 @@ td {
 }
 
 .range-tabs button {
-    border: none;
-    background: none;
+    border: 1px solid #d1d5db;
+    background: #fff;
     padding: 10px 16px;
     border-radius: 8px;
     cursor: pointer;
     font-family: 'Inter', sans-serif;
     font-size: 14px;
-    font-weight: 500;
-    color: #4b5563;
+    font-weight: 600;
+    color: #374151;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.range-tabs button:hover {
+    border-color: #9ca3af;
+    background: #f9fafb;
+    color: #111827;
 }
 
 .range-tabs button.active {
     background: var(--primary);
+    border-color: var(--primary);
     color: #fff;
 }
 
@@ -911,6 +920,12 @@ td {
     align-items: center;
     gap: 8px;
     color: #374151;
+}
+
+.range-tabs button.custom-date.active {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
 }
 
 .export-actions {
