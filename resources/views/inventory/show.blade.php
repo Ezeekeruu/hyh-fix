@@ -189,6 +189,10 @@
                     <div class="form-actions">
                         <a href="{{ route('products.index') }}" class="btn-cancel">Back to Inventory</a>
 @if(auth()->check() && auth()->user()->isAdmin())
+                        <a href="{{ route('products.stock-in', ['product_id' => $product->id]) }}" class="btn-add-product" style="text-decoration: none;" title="Record incoming stock">
+                            <i class="fa-solid fa-boxes-stacked"></i>
+                            Stock In
+                        </a>
                         <a href="{{ route('products.edit', $product->id) }}" class="btn-add-product" style="text-decoration: none;">
                             <i class="fa-solid fa-pen"></i>
                             Edit Product

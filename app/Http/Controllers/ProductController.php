@@ -4,8 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\StockMovement;
 use App\Models\Supplier;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
@@ -429,5 +432,86 @@ class ProductController extends Controller
             ->route('products.index', ['status' => 'archived'])
 
             ->with('success', 'Product restored successfully.');
+    }
+
+
+    // =========================================================
+    // 9. DISPLAY THE STOCK-IN FORM (admin only)
+    // =========================================================
+    public function stockInForm(Request $request)
+    {
+        $products = Product::active()->orderBy('product_name')->get();
+
+        $selected = null;
+        if ($request->filled('product_id')) {
+            $selected = Product::active()->findOrFail($request->input('product_id'));
+        }
+
+        return view('inventory.stock-in', [
+            'products' => $products,
+            'selected' => $selected,
+        ]);
+    }
+
+
+    // =========================================================
+    // 10. RECORD INCOMING STOCK (admin only)
+    // =========================================================
+    //
+    // Adds quantity to the product and blends the purchase price
+    // into cost_price as a moving average, so the same product
+    // arriving at different prices stays fairly costed.
+    public function stockIn(Request $request)
+    {
+        $request->validate([
+            'product_id' => [
+                'required',
+                Rule::exists('products', 'id')->whereNull('archived_at'),
+            ],
+            'quantity' => 'required|integer|min:1',
+            'unit_cost' => 'required|numeric|min:0',
+            'notes' => 'nullable|string|max:255',
+        ]);
+
+        DB::transaction(function () use ($request) {
+            $product = Product::active()->lockForUpdate()
+                ->findOrFail($request->input('product_id'));
+
+            $qty = (int) $request->input('quantity');
+            $cost = (float) $request->input('unit_cost');
+
+            // Moving-average cost.
+            //
+            // Example: 10 pcs at ₱100 + 10 pcs at ₱120
+            // → (1000 + 1200) / 20 = ₱110 new cost.
+            //
+            // Empty shelf → the new batch sets the cost.
+            if ($product->stock_quantity > 0) {
+                $product->cost_price = round(
+                    ($product->stock_quantity * $product->cost_price + $qty * $cost)
+                    / ($product->stock_quantity + $qty),
+                    2
+                );
+            } else {
+                $product->cost_price = $cost;
+            }
+
+            $product->stock_quantity += $qty;
+            $product->save();
+
+            StockMovement::record(
+                $product->id,
+                'in',
+                $qty,
+                $cost,
+                Auth::id(),
+                $request->input('notes')
+            );
+        });
+
+        return redirect()
+            ->route('products.show', $request->input('product_id'))
+
+            ->with('success', 'Stock added successfully.');
     }
 }

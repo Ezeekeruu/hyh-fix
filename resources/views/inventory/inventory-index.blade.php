@@ -236,8 +236,13 @@
                         </a>
 
 @if(auth()->check() && auth()->user()->isAdmin())
-                        <!-- 5. Add New Item Button -->
-                        <a href="{{ url('/inventory/add') }}" class="btn-add-product" style="margin-left: auto; text-decoration: none;">
+                        <!-- 5. Stock In Button -->
+                        <a href="{{ route('products.stock-in') }}" class="btn-add-product" style="margin-left: auto; text-decoration: none;" title="Record incoming stock">
+                            <i class="fa-solid fa-boxes-stacked"></i>
+                            Stock In
+                        </a>
+                        <!-- 6. Add New Item Button -->
+                        <a href="{{ url('/inventory/add') }}" class="btn-add-product" style="text-decoration: none;">
                             <i class="fa-solid fa-plus"></i>
                             Add New Item
                         </a>
@@ -309,6 +314,7 @@
                                         </form>
                                         @else
                                         <a href="{{ route('products.edit', $product->id) }}" class="btn-icon" title="Edit"><i class="fa-solid fa-pen"></i></a>
+                                        <a href="{{ route('products.stock-in', ['product_id' => $product->id]) }}" class="btn-icon success" title="Stock In"><i class="fa-solid fa-boxes-stacked"></i></a>
                                         <form action="{{ route('products.destroy', $product->id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Archive this product? It will be hidden from the list, POS, and stock alerts, but past records are kept.');">
                                             @csrf
                                             @method('DELETE')

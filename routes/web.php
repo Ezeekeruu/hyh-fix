@@ -72,6 +72,10 @@ Route::middleware('auth')->group(function () {
         Route::delete('/inventory/{id}', [ProductController::class, 'destroy'])->name('products.destroy');
         Route::post('/inventory/{id}/restore', [ProductController::class, 'restore'])->name('products.restore');
 
+        // Stock In — admin records incoming inventory, moving-average costing applied.
+        Route::get('/inventory/stock-in', [ProductController::class, 'stockInForm'])->name('products.stock-in');
+        Route::post('/inventory/stock-in', [ProductController::class, 'stockIn'])->name('products.stockIn');
+
         // Master data — each with its own module page + table.
         Route::get('/categories', [CategoryController::class, 'index'])->name('categories.index');
         Route::get('/categories/add', [CategoryController::class, 'create'])->name('categories.create');
