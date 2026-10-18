@@ -1568,6 +1568,15 @@ a.panel-btn {
     margin-left: 4px;
 }
 
+/* Hide custom date inputs by default (only show when Custom Date clicked) */
+#start_date_picker, #end_date_picker, .date-sep, .filters-inline .apply-btn {
+    display: none;
+}
+
+.filter-label {
+    display: none;
+}
+
 /* DETAILED REPORT TABLES */
 .report-detail-section {
     margin-top: 28px;

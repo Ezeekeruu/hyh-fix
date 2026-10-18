@@ -125,5 +125,47 @@
         @endforelse
         </tbody>
     </table>
+
+    <!-- Detailed Transaction Report -->
+    <h2 class="section-title">Detailed Transaction Report</h2>
+    <p class="section-sub">Complete row-by-row transaction dump for the selected period.</p>
+    <table>
+        <thead>
+            <tr>
+                <th>DATE &amp; TIME</th>
+                <th>TYPE</th>
+                <th class="num">REF #</th>
+                <th>CUSTOMER</th>
+                <th>ITEM / DEVICE</th>
+                <th class="num">QTY</th>
+                <th class="num">AMOUNT</th>
+                <th>STATUS</th>
+            </tr>
+        </thead>
+        <tbody>
+        @forelse($allTransactions as $txn)
+        <tr>
+            <td>{{ $txn->date_label }}</td>
+            <td>{{ ucfirst($txn->type) }}</td>
+            <td class="num">{{ $txn->ref }}</td>
+            <td>{{ $txn->customer }}</td>
+            <td>{{ $txn->item }}</td>
+            <td class="num">{{ number_format($txn->qty) }}</td>
+            <td class="num">P{{ number_format($txn->amount, 2) }}</td>
+            <td>{{ $txn->status }}</td>
+        </tr>
+        @empty
+        <tr><td colspan="8" class="empty-row">No transactions found in the selected period.</td></tr>
+        @endforelse
+        </tbody>
+        <tfoot>
+            <tr class="total-row">
+                <td colspan="5">TOTAL</td>
+                <td class="num">{{ number_format($allTransactions->sum('qty')) }}</td>
+                <td class="num">P{{ number_format($allTransactions->sum('amount'), 2) }}</td>
+                <td></td>
+            </tr>
+        </tfoot>
+    </table>
 </body>
 </html>
